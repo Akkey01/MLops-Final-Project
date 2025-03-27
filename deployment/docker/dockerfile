@@ -22,4 +22,4 @@ COPY demovideo.MP4 ./demovideo.MP4
 RUN chmod +x download_signals.sh setup_env.sh
 
 # Run the signal downloader first, then environment setup
-CMD ./download_signals.sh && ./setup_env.sh
+CMD ./download_signals.sh && ./setup_env.sh && tail -f /dev/null

@@ -11,7 +11,7 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install pip packages
-RUN pip install --upgrade pip setuptools wheel vosk vosk-transcriber
+RUN pip install --upgrade pip setuptools wheel vosk
 
 # Copy bash scripts into the container
 COPY download_signals.sh ./download_signals.sh

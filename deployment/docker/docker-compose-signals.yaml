@@ -7,6 +7,7 @@ volumes:
 services:
   download-signals:
     image: alpine:latest
+    user: root
     volumes:
       - signals-data:/data
     working_dir: /data

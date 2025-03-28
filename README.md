@@ -1,5 +1,6 @@
 # MLops-Final-Project
 
+[MLops-Final-Project](https://docs.google.com/document/d/1shFQ_QEM6-WWJpvHPlkx7_FjPbFmjwMKdknKFCaruxI/edit?tab=t.0)
 
 ## Title of project
 

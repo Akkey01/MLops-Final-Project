@@ -1,7 +1,5 @@
 # MLops-Final-Project
 
-[MLops-Final-Project](https://docs.google.com/document/d/1shFQ_QEM6-WWJpvHPlkx7_FjPbFmjwMKdknKFCaruxI/edit?tab=t.0)
-
 ## Intelligent Multimedia Processing (IMP) for Enterprises
 Enterprises currently rely on manual searching through documents, audio, and video recordings, which is labor-intensive and inefficient. The IMP system automates the extraction and indexing of this multimedia data, allowing employees to directly query the information using natural language questions. Additionally, the system can automatically generate minutes of meetings from recorded meeting sessions, further increasing productivity and documentation accuracy. Key business metrics for evaluation include reduction in time spent searching for information, accuracy of retrieved answers, and quality of automatically generated meeting minutes.
 
@@ -48,9 +46,164 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 ### Detailed design plan
 Detailed Design Plan for Intelligent Multimedia Processing (IMP) System
 Model Training and Training Platforms
+## Unit 1
+## Scale
+#### Data
+| **Dataset**                              | **Original Size** |
+|------------------------------------------|-------------------|
+| AMI Meeting Corpus                       | 24 GB             |
+| ICSI Meeting Corpus                      | 39 GB             |
+| NIST Meeting Pilot Corpus Speech         | 32 GB             |
+
+#### Model
+
+| **Model**                | **Parameters**             | **Approx. Model Size**                      | **Inference Latency**                                                      |
+|--------------------------|----------------------------|---------------------------------------------|----------------------------------------------------------------------------|
+| **Llama 3B**             | 3 Billion                  | ~12-15GB (FP32; can be reduced via quantization)| ~0.5-1 second for typical query generation on a high-end GPU                |
+| **VOSK**                 | (Not typically measured)   | Lightweight (generally <1GB)                | Real-time or near real-time transcription (processing speed close to audio duration) |
+| **longformer-base-4096** | ~149 Million               | ~600MB to 1GB                                | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
 
 
-#### Model training and training platforms
+#### Deployment
+We will deploy models on different configurations of CPUs and GPUs and compare performance on each, to obtain the most economical options for deployment. We will also utilize staging, canary and production environments to comprehensively test the service.
+
+## Value Proposition
+We are reimagining Atlassian’s Confluence (similar to Google Drive but more advanced in terms of features) by integrating a Retrieval-Augmented Generation (RAG) agent that empowers users to extract precise, context-rich insights from a vast repository of enterprise knowledge. This innovative approach transforms static documentation into a dynamic, interactive platform where queries yield targeted, actionable information, enhancing both collaboration and decision-making. By seamlessly merging advanced machine learning with robust knowledge management, our solution elevates the user experience and drives operational excellence across the organization.
+#### 1. Enhancing Operational Efficiency
+##### Automation:
+The IMP system brings automation to tasks that once required countless hours of manual work. Imagine the challenge of sifting through thousands of client documents, compliance records, or recorded presentations—now, this system can handle that load effortlessly. It minimizes manual labor and drastically reduces the chance for human error.
+
+##### Rapid Insights:
+Leveraging cutting-edge deep learning for natural language processing, the system doesn’t just process data—it understands it. It quickly highlights essential details, spots irregularities, and raises alerts on potential risks, ensuring that nothing critical slips through the cracks.
+
+##### Scalability:
+As the volume of unstructured data grows with the client base and operations, the IMP system scales alongside the business. Whether it’s a sudden influx of documents or a surge in multimedia content, the system remains robust, ensuring Atlassian’s services stay reliable and responsive.
+
+##### Enhanced Multimedia Data Handling:
+Beyond traditional documents, the IMP system is specially designed to process various multimedia formats—like videos, images, and audio recordings. This means whether the data comes in the form of a detailed video briefing or a series of promotional images, the system can extract meaningful insights, further empowering the user's decision-making process.
+
+#### 2. Strategic Business Advantages
+##### Cost Reduction:
+By automating the heavy lifting of data processing, the system helps slash operational costs. Less time spent on manual reviews means more resources can be allocated to strategic initiatives and high-value client engagements.
+
+##### Improved Decision Making:
+Faster, more accurate insights mean Atlassian’s consultants can deliver recommendations that are both timely and data-driven. This leads to better decisions that directly enhance client satisfaction and drive business growth.
+
+##### Competitive Differentiation:
+In today’s fast-paced consulting landscape, staying ahead means embracing innovation. By integrating advanced machine learning capabilities, Atlassian not only optimizes its operations but also reinforces its image as a forward-thinking leader in the industry.
+
+#### Current status quo(non-ML)  used in the business : 
+Confluence currently operates using traditional, non-ML approaches to manage and organize content. Here’s a breakdown of the status quo:
+##### Manual Content Creation & Curation:
+Content in Confluence is primarily created and curated by users. Teams rely on manually drafted pages, blogs, and documents, often following pre-defined templates. This requires significant human input for content creation, categorization, and updating.
+##### Keyword-Based Search & Indexing:
+The search functionality in Confluence is based on traditional indexing and keyword matching. Users search for content using specific keywords or tags, with results ranked by relevance using conventional algorithms rather than contextual or semantic analysis.
+##### Static Organization & Tagging:
+Content is organized using manually assigned labels, spaces, and hierarchies. There is no automated content categorization or dynamic reorganization based on usage patterns or content similarity, which means that maintaining an up-to-date structure is a largely manual effort.
+##### Standard Collaboration Tools:
+While Confluence offers robust collaboration features like version control, commenting, and page sharing, the recommendations and insights provided (such as related pages or recent updates) are driven by rule-based logic rather than personalized, machine learning–driven insights.
+
+#### Business metrics 
+To evaluate the success of the Intelligent Multimedia Processing (IMP) system, consider the following business metrics across key areas:
+##### 1. User Engagement & Adoption
+Adoption Rate – Percentage of enterprise users actively using IMP within a given period.
+Active Users – Number of unique users leveraging IMP daily, weekly, or monthly.
+Query Volume – Number of queries performed within the system, indicating usage frequency.
+##### 2. Efficiency & Productivity Gains
+Reduction in Retrieval Time – Average time saved in accessing relevant information compared to traditional methods.
+Automation Rate – Percentage of manual document parsing and multimedia reviewing tasks replaced by IMP.
+Query Success Rate – Percentage of queries that return relevant and useful results.
+User Satisfaction Score – Feedback from users on ease of use and effectiveness.
+##### 3. Business Impact & ROI
+Cost Savings – Reduction in labor costs due to decreased manual document processing.
+Operational Efficiency Gain – Productivity improvements quantified in work hours saved per employee.
+Return on Investment (ROI) – Revenue or cost savings generated compared to implementation costs.
+##### 4. Data Quality & Accuracy
+Accuracy of Retrieval – Percentage of correctly retrieved multimedia content based on user queries.
+Error Rate – Number of incorrect, incomplete, or irrelevant results returned.
+##### 5. Future Scalability & Expansion
+Multilingual Performance – Effectiveness of language support when new languages are integrated.
+Enterprise Expansion Rate – Growth in the number of enterprises or business units adopting IMP.
+Infrastructure Utilization – Performance metrics such as GPU load, query processing time, and storage efficiency.
+Tracking these metrics will help measure IMP’s effectiveness, adoption, and business value while guiding future improvements.
+
+## Outside Material
+##### AMI Meeting Corpus
+
+| **Aspect**                 | **Details**                                                                                                                                                                                                                                                                                               |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Name of Dataset**        | AMI Meeting Corpus                                                                                                                                                                                                                                                                                        |
+| **Creator(s)**             | The AMI Consortium – a collaboration between universities and research labs across Europe (e.g., University of Edinburgh, IDIAP Research Institute, TNO, etc.)                                                                                                                                       |
+| **Date of Creation**       | Initial release in 2005, with subsequent updates                                                                                                                                                                                                                                                         |
+| **Purpose of Collection**  | Designed for research in multimodal conversational understanding, such as automatic speech recognition (ASR), speaker diarization, topic segmentation, summarization, etc.                                                                                                                            |
+| **Conditions of Collection** | Meetings were scripted and unscripted, held in controlled environments, and involved multiple speakers with consent. Audio, video, and transcriptions were all collected.                                                                                                                            |
+| **Academic Documentation** | Yes – documented in the paper: Carletta, J. (2007). “Unleashing the killer corpus: Experiences in creating the multi-everything AMI Meeting Corpus.” *Language Resources and Evaluation*.                                                                                                              |
+| **Privacy Concerns**       | Minimal – participants gave informed consent; however, since real people were recorded, anonymity and ethical usage are still important.                                                                                                                                                                |
+| **Fairness/Ethics Concerns** | The corpus may lack demographic diversity (e.g., accents, gender balance), which can introduce bias in downstream models trained using this data.                                                                                                                                                         |
+| **Preprocessing Notes**    | Various levels of pre-processing available: raw audio/video, speaker-annotated audio, aligned transcripts, ASR outputs, and topic annotations. Some processed versions include segmented/chunked data.                                                                                                   |
+| **License**                | Distributed under a Creative Commons Attribution Non-Commercial Share-Alike (CC BY-NC-SA) license.                                                                                                                                                                                                       |
+| **Permissible Use Cases**  | Non-commercial academic and research purposes. Commercial use is prohibited without additional permissions.                                                                                                                                                                                              |
+| **Where to Access**        | [AMI Corpus Access](https://groups.inf.ed.ac.uk/ami/corpus/)                                                                                                                                                                                                                                              |
+
+---
+
+##### ICSI Meeting Corpus
+
+| **Aspect**                 | **Details**                                                                                                                                                                                                                                                                                              |
+|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Name of Dataset**        | ICSI Meeting Corpus                                                                                                                                                                                                                                                                                       |
+| **Creator(s)**             | International Computer Science Institute (ICSI), Berkeley, CA, USA                                                                                                                                                                                                                                      |
+| **Date of Creation**       | Recorded between 2000 and 2002                                                                                                                                                                                                                                                                             |
+| **Purpose of Collection**  | Designed to support research in automatic speech recognition (ASR), speaker diarization, meeting summarization, dialogue analysis, and other multimodal processing tasks.                                                                                                                             |
+| **Conditions of Collection** | Natural, real meetings held by ICSI research teams (mostly speech and audio researchers). Audio recorded with multiple microphones per meeting for rich multi-channel capture.                                                                                                                       |
+| **Academic Documentation** | Yes – see: Janin, A., Ang, J., et al. (2003). “The ICSI Meeting Corpus.” IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP).                                                                                                                                              |
+| **Privacy Concerns**       | Participants provided consent for recording and research use. Still, meetings contain real speech from identifiable individuals, so ethical use respecting privacy is necessary.                                                                                                                    |
+| **Fairness/Ethics Concerns** | Like many corpora, may reflect demographic bias (limited accents, cultural diversity, or gender balance), potentially affecting generalization or fairness in trained models.                                                                                                                      |
+| **Preprocessing Notes**    | Distributed with transcripts, speaker segmentations, and channel-separated audio. Some versions include automatic annotations or phonetic alignments.                                                                                                                                                   |
+| **License**                | Available under a Linguistic Data Consortium (LDC) license. Access typically requires an LDC membership or specific agreement.                                                                                                                                                                             |
+| **Permissible Use Cases**  | Permitted for research and educational purposes under the LDC license. Commercial use may require additional licensing or permissions from ICSI or LDC.                                                                                                                                                  |
+| **Where to Access**        | Through the Linguistic Data Consortium ([LDC Access](https://www.ldc.upenn.edu)), catalog ID: LDC2004S02                                                                                                                                                                                                 |
+#####  NIST Meeting Pilot Corpus Speech
+| **Aspect**            | **Details**  |
+|-------------------------|-------------|
+| **Name of Dataset**      | NIST Meeting Pilot Corpus Speech (LDC2004S09) |
+| **Creator(s)**          | John S. Garofolo, Martial Michel, Vincent M. Stanford, Elham Tabassi, Jonathan G. Fiscus, Christophe D. Laprun, Nicolas Pratz, Jerome Lard (Developed by NIST) |
+| **Date of Creation**    | Recorded (Nov 2001 - Dec 2003), Released (July 12, 2004) |
+| **Purpose of Collection** | To improve automatic meeting speech recognition, speaker verification, and discourse analysis |
+| **Conditions of Collection** | Recorded at NIST Meeting Data Collection Lab with 61 participants, using multiple microphone types |
+| **Academic Documentation** | DOI: [10.35111/800p-fv08](https://doi.org/10.35111/800p-fv08) |
+| **Privacy Concerns**     | Includes identifiable speaker voices, conversations may contain sensitive information |
+| **Fairness/Ethics Concerns** | More native speakers (45) than non-native (16), potential bias in language models |
+| **Preprocessing Notes**  | Audio format: SPHERE (16 kHz, 16-bit PCM, mono), transcripts available separately (LDC2004T13) |
+| **License**             | Requires LDC User Agreement for Non-Members, paid access for non-members |
+| **Permissible Use Cases** | Speech recognition research, NLP, speaker identification, discourse analysis, meeting transcription |
+| **Where to Access**      | [LDC Catalog Entry](https://catalog.ldc.upenn.edu/LDC2004S09) (Subscription/Purchase Required) |
+
+
+
+
+## Multiple Models: System Design Explanation
+
+The system is composed of multiple machine learning models that work together—not just in parallel—to accomplish a complex goal: automated meeting understanding and response generation (e.g., query answering, meeting minutes generation). Each model contributes a unique capability that is critical for the system’s end-to-end function:
+
+### Models Overview
+
+| **Model**                 | **Role in the Pipeline**                                                                                                                                       | **Why It’s Necessary**                                                                                                                                                                                   |
+|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Base Model 1: LLaMA 7B**| Used as a language model for generating responses and meeting minutes from retrieved contextual segments.                                                       | LLaMA is powerful for generation and reasoning based on context. It's essential for producing fluent, coherent text.                                                                                      |
+| **Base Model 2: VOSK**     | Performs speech-to-text transcription from audio input. This is the first model in the pipeline when the input is raw meeting audio.                              | Without this, the system cannot convert spoken language into usable text for downstream processing.                                                                                                       |
+| **Base Model 3: Longformer**| Used to create text embeddings for long-form documents or transcripts, enabling semantic search over meeting content in the vector database (RAG engine).        | Enables contextual retrieval of relevant segments for LLaMA to reason over. Long context handling is essential.                                                                                            |
+
+### Why All Three Models Are Required Together
+
+- **VOSK** converts audio files into readable, timestamped text.
+- **Longformer** embeds the resulting (long) transcripts for semantic indexing in a vector database.
+- **LLaMA 7B** is used in the RAG (Retrieval-Augmented Generation) loop, receiving the most relevant transcript segments and generating:
+  - Natural language responses to queries.
+  - Summarized meeting minutes.
+
+
+### Model training and training platforms
 ## Strategy
 
 Our training strategy employs distributed training techniques for the Longformer-base-4096 embeddings model and fine-tuning of Llama 7B using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.

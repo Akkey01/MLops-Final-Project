@@ -2,7 +2,7 @@
 
 [MLops-Final-Project](https://docs.google.com/document/d/1shFQ_QEM6-WWJpvHPlkx7_FjPbFmjwMKdknKFCaruxI/edit?tab=t.0)
 
-## Title of project
+## Intelligent Multimedia Processing (IMP) for Enterprises
 Enterprises currently rely on manual searching through documents, audio, and video recordings, which is labor-intensive and inefficient. The IMP system automates the extraction and indexing of this multimedia data, allowing employees to directly query the information using natural language questions. Additionally, the system can automatically generate minutes of meetings from recorded meeting sessions, further increasing productivity and documentation accuracy. Key business metrics for evaluation include reduction in time spent searching for information, accuracy of retrieved answers, and quality of automatically generated meeting minutes.
 <!-- 
 Discuss: Value proposition: Your will propose a machine learning system that can be used in an existing business or service. (You should not propose a system in which a new business or service would be developed around the machine learning system.) Describe the value proposition for the machine learning system. What’s the (non-ML) status quo used in the business or service? What business metric are you going to be judged on? (Note that the “service” does not have to be for general users; you can propose a system for a science problem, for example.)

@@ -31,12 +31,13 @@ Discuss: Value proposition: Your will propose a machine learning system that can
 
 <!-- In a table, a row for each dataset, foundation model. Name of data/model, conditions under which it was created (ideally with links/references), conditions under which it may be used. -->
 
-|              | How it was created | Conditions of use |
-|--------------|--------------------|-------------------|
-| Data set 1   |                    |                   |
-| Data set 2   |                    |                   |
-| Base model 1 |                    |                   |
-| etc          |                    |                   |
+|              | How it was created   | Conditions of use  |
+|--------------|----------------------|--------------------|
+| Data set 1   |os- AMI Meeting Corpus| LLM Fine Tuning    |
+| Data set 2   |os-ICSI Meeting Corpus|  LLM Fine Tuning   |
+| Base model 1 | Llama 7b             |                    |
+| Base model 2 | VOSK                 |  (speech to text)  |
+| Base model 3 | longformer-base-4096 |Text embedding model|
 
 
 ### Summary of infrastructure requirements
@@ -57,7 +58,8 @@ Model Training and Training Platforms
 <!-- In each section, you should describe (1) your strategy, (2) the relevant parts of the diagram, (3) justification for your strategy, (4) relate back to lecture material, (5) include specific numbers. -->
 
 #### Model training and training platforms
-Strategy
+## Strategy
+
 Our training strategy employs distributed training techniques for the Longformer-base-4096 embeddings model and fine-tuning of Llama 7B using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.
 Relevant Parts of the Architecture
 
@@ -81,7 +83,7 @@ Hyperparameter optimization via Ray Tune
 Parameter-efficient fine-tuning techniques (LORA)
 Experiment tracking best practices using MLFlow
 
-Specific Numbers
+## Specific Numbers
 
 Training Infrastructure: 4 GPU nodes on Chameleon Cloud (each with NVIDIA T4)
 Training Dataset: 39GB ICSI Meeting Corpus with approximately 75 hours of meeting recordings
@@ -90,9 +92,9 @@ Hyperparameter Tuning: 30 trials using Ray Tune with Bayesian optimization
 Training Time: Approximately 12 hours for full embedding model training
 LORA Configuration: Rank 8, alpha 16, reducing trainable parameters from ~7B to ~35M
 
-<!-- Make sure to clarify how you will satisfy the Unit 4 and Unit 5 requirements, and which optional "difficulty" points you are attempting. -->
+## <!-- Make sure to clarify how you will satisfy the Unit 4 and Unit 5 requirements, and which optional "difficulty" points you are attempting. -->
 
-#### Model serving and monitoring platforms
+## Model serving and monitoring platforms
 Strategy
 We'll implement a multi-tier serving strategy with optimizations for both latency-sensitive and throughput-oriented workloads. FastAPI will serve as our API layer, with optimized inference paths for both CPU and GPU deployment options. Comprehensive monitoring will track model performance, drift, and system health.
 Relevant Parts of the Architecture

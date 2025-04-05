@@ -24,13 +24,13 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 ### Summary of outside materials
 
 
-|              | How it was created   | Conditions of use  |
-|--------------|----------------------|--------------------|
-| Data set 1   |os- AMI Meeting Corpus| LLM Fine Tuning    |
-| Data set 2   |os-ICSI Meeting Corpus|  LLM Fine Tuning   |
-| Base model 1 | Llama 7b             |                    |
-| Base model 2 | VOSK                 |  (speech to text)  |
-| Base model 3 | longformer-base-4096 |Text embedding model|
+|              | Name                 | 
+|--------------|----------------------|
+| Data set 1   |os- AMI Meeting Corpus|
+| Data set 2   |os-ICSI Meeting Corpus|
+| Base model 1 | Llama 7b             |
+| Base model 2 | VOSK                 |
+| Base model 3 | longformer-base-4096 |
 
 
 ### Summary of infrastructure requirements

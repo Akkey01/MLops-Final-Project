@@ -1,0 +1,17 @@
+version: "3.7"
+
+volumes:
+  whisper_model: {}
+
+services:
+  whisper-setup:
+    build:
+      context: .
+      dockerfile: whisper.Dockerfile
+    volumes:
+      - whisper_model:/app/model
+
+  # another-service:
+  #   image: your-image
+  #   volumes:
+  #     - whisper_model:/data/model

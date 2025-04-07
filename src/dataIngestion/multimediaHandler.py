@@ -1,6 +1,10 @@
 import os
+import time
+from whisper import getAudioFileFromVideo, audio_to_text
+from PyPDF2 import PdfReader
 
-class InputHandler:
+
+class MultiMediaHandler:
     def __init__(self, data):
         self.data = data
 
@@ -28,9 +32,8 @@ class InputHandler:
         Returns:
             str: A message indicating the audio file was processed.
         """
-        print("Handling audio file:", self.data)
-        
-        return f"Processed audio file: {self.data}"
+        custom_text_filename = f'{time.now}.txt'
+        audio_to_text(self.data, custom_text_filename)
 
     def videoHandler(self):
         """
@@ -38,9 +41,10 @@ class InputHandler:
         Returns:
             str: A message indicating the video file was processed.
         """
-        print("Handling video file:", self.data)
-        
-        return f"Processed video file: {self.data}"
+        custom_audio_filename = f'{time.now}.wav'
+        custom_text_filename = f'{time.now}.txt'
+        getAudioFileFromVideo(self.data, custom_audio_filename)
+        audio_to_text(custom_audio_filename, custom_text_filename)
 
     def documentHandler(self):
         """
@@ -48,9 +52,18 @@ class InputHandler:
         Returns:
             str: A message indicating the document file was processed.
         """
-        print("Handling document file:", self.data)
-       
-        return f"Processed document file: {self.data}"
+        reader = PdfReader(self.data)
+
+        all_text = ""
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                all_text += text + "\n"
+
+        output_file = f'{time.now}.txt'
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(all_text)
 
     def process(self):
         """

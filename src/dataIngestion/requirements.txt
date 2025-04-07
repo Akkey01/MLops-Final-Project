@@ -1,0 +1,7 @@
+# requirements.txt
+
+torch
+moviepy
+speechrecognition
+git+https://github.com/openai/whisper.git
+PyPDF2

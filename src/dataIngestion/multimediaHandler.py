@@ -81,13 +81,3 @@ class MultiMediaHandler:
         else:
             print("Unsupported file type:", self.data)
             return "Unsupported file type"
-
-if __name__ == "__main__":
-
-    test_files = ["song.mp3", "movie.mp4", "report.pdf", "unknown.xyz"]
-
-    for file in test_files:
-        print("\nProcessing file:", file)
-        handler = InputHandler(file)
-        result = handler.process()
-        print("Result:", result)

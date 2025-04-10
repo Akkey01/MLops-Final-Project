@@ -1,0 +1,23 @@
+version: "3.7"
+
+volumes:
+  whisper_model: {}
+  extracted_audio: {}
+  text_files: {}
+
+services:
+  whisper-setup:
+    build:
+      context: .
+      dockerfile: whisperModelDownloader.Dockerfile
+    volumes:
+      - whisper_model:/app/model
+
+  multimedia-handler:
+    build:
+      context: .
+      dockerfile: multimediaHandler.Dockerfile
+    volumes:
+      - whisper_model:/data/model
+      - extracted_audio:/data/audio/files
+      - text_files:/data/files

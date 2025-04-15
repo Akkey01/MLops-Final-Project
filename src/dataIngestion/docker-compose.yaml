@@ -16,8 +16,10 @@ services:
   multimedia-handler:
     build:
       context: .
-      dockerfile: multimediaHandler.Dockerfile
+      dockerfile: multimediaHandler.dockerfile
     volumes:
       - whisper_model:/data/model
       - extracted_audio:/data/audio/files
       - text_files:/data/files
+    depends_on:
+      - whisper-setup

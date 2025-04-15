@@ -1,7 +1,7 @@
 import whisper
 import torch 
 import os
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 import speech_recognition as sr
 
 device = "cuda" if torch.cuda.is_available() else "cpu"

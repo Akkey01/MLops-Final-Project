@@ -1,6 +1,6 @@
 import os
 import time
-from whisper import getAudioFileFromVideo, audio_to_text
+from model import getAudioFileFromVideo, audio_to_text
 from PyPDF2 import PdfReader
 
 

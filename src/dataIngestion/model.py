@@ -26,7 +26,7 @@ def audio_to_text(audio_file_path, output_file_path):
         text = recognizer.recognize_google(audio_data)
         with open(output_file_path, "w") as file:
             file.write(text)
-        return True
+        return file
     except sr.UnknownValueError:
         print("Could not understand audio")
         return False

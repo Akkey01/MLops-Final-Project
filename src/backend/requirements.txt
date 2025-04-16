@@ -1,6 +1,4 @@
 fastapi
-uvicorn
-numpy
-pillow
 onnx
 onnxruntime-gpu
+uvicorn

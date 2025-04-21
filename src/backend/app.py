@@ -11,7 +11,7 @@ app = FastAPI(
 ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac"}
 MAX_FILE_SIZE_MB = 50
 
-@app.post("/downloadTextAudioFile")
+@app.post("/downloadTextAudioFile") 
 async def predict(file: UploadFile = File(...)):
     # Validate file extension
     ext = os.path.splitext(file.filename)[-1].lower()

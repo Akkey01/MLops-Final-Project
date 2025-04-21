@@ -1,32 +1,40 @@
-# This file is used to generate the following output for the report.
-# 1. Model Size
-# 2. Throughout for Batch Inference
-# 3. Latency for online (Single sample)
-# 4. Concurrency requirements for not on device deployments
-# 5. Convert Model to ONNX version
-# 6. System Level Optimisation to support required level of optimisation
-import torch
-import onnx
-import onnxruntime as ort
 import os
+import neural_compressor
+from neural_compressor import quantization
+from torchvision import datasets, transforms
 
-# Load the model from .pth file
-model_path = ""
-device = torch.device("cpu")
-# weights_only=False indicates that the model file contains both the model architecture 
-# and its weights (not just state_dict). This is important for exporting to ONNX.
-model = torch.load(model_path, map_location=device, weights_only=False)
-onnx_model_path = "./models/IMP.onnx"
-optimized_model_path = "./models/IMP_optimized.onnx"
+# Quantization
+# Create Test set to test the accuracy for quantized output
+fp32_model = neural_compressor.model.onnx_model.ONNXModel("./models/IMP.onnx")
 
-# Graph Optimisation
-session_options = ort.SessionOptions()
-session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED # apply graph optimizations
-session_options.optimized_model_filepath = optimized_model_path 
+# Configure the quantizer
+config_ptq = neural_compressor.PostTrainingQuantConfig(
+    accuracy_criterion = neural_compressor.config.AccuracyCriterion(
+        criterion="absolute",  
+        tolerable_loss=0.05  # We will tolerate up to 0.05 less accuracy in the quantized model
+    ),
+    approach="static", 
+    device='cpu', 
+    quant_level=1,
+    quant_format="QOperator", 
+    recipes={"graph_optimization_level": "ENABLE_EXTENDED"}, 
+    calibration_sampling_size=128
+)
 
-ort_session = ort.InferenceSession(onnx_model_path, sess_options=session_options, providers=['CPUExecutionProvider'])
+# Find the best quantized model meeting the accuracy criterion
+q_model = quantization.fit(
+    model=fp32_model, 
+    conf=config_ptq, 
+    calib_dataloader=eval_dataloader,
+    eval_dataloader=eval_dataloader, 
+    eval_metric=neural_compressor.metric.Metric(name='topk')
+)
 
-onnx_model_path = "./models/IMP_optimized.onnx"
+# Save quantized model
+q_model.save_model_to_file("./models/IMP_quantized_aggressive.onnx")
+
+#Testing the quantised model version
+onnx_model_path = "./models/IMP_quantized_aggressive.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
 benchmark_session(ort_session)
 
@@ -37,7 +45,7 @@ def benchmark_session(ort_session):
     print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 
     ## Benchmark accuracy
-
+    # Need to write custom logic for testing we aint dealing with images
     correct = 0
     total = 0
     for images, labels in test_loader:

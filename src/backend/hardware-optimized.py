@@ -1,8 +1,6 @@
 import os
 import time
 import numpy as np
-import torch
-import onnx
 import onnxruntime as ort
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
@@ -25,7 +23,7 @@ def benchmark_session(ort_session):
     print(f"Execution provider: {ort_session.get_providers()}")
 
     ## Benchmark accuracy
-
+    # Custom logic to test the accuracy for our model
     correct = 0
     total = 0
     for images, labels in test_loader:
@@ -82,8 +80,7 @@ def benchmark_session(ort_session):
     print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 #CUDA execution provider
-
-onnx_model_path = "models/food11.onnx"
+onnx_model_path = "./models/IMP.onnx"
 ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
 benchmark_session(ort_session)
 ort.get_device()

@@ -1,5 +1,4 @@
 fastapi
 onnx
-onnxruntime-gpu
 uvicorn
 torch

@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
 from dataIngestion.model import getAudioFileFromVideo
-
 app = FastAPI(
     title="MLOPS Final Project (ONNX)",
     description="API for consuming Intelligent Multimedia Processing using ONNX Runtime",
@@ -10,6 +9,10 @@ app = FastAPI(
 # Remove BaseModel for file upload and use FastAPI's UploadFile directly in the endpoint
 ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac"}
 MAX_FILE_SIZE_MB = 50
+
+@app.get("/", status_code=201)
+def read_root():
+    return {"Server healthcheck!"}
 
 @app.post("/downloadTextAudioFile") 
 async def predict(file: UploadFile = File(...)):

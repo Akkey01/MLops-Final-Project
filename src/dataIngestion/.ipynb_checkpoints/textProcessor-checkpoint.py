@@ -9,14 +9,13 @@ def textProcessor(raw_text):
     processed_text = re.sub(r'\s+', ' ', processed_text)
     processed_text = re.sub(r'[^a-z0-9\s.,!?]', '', processed_text)
     
-    # # Generate embedding
-    # embedding = model.encode(processed_text)
+    # Generate embedding
+    embedding = model.encode(processed_text)
 
-    return processed_text
+    return processed_text, embedding
 
 
-# text = textProcessor("Intelligent Multimedia Processing (IMP) for Enterprises")
-
-# print("Processed Text:", text)
-
+text, vector = textProcessor("My name is Anthony Gonsalves")
+print("Processed Text:", text)
+print("Vector Embedding shape:", vector.shape)
 

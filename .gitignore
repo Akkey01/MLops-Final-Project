@@ -13,3 +13,6 @@ src/models/deepspeech-0.9.3-models.scorer
 
 src/models/audio/youtube.MP4
 src/dataIngestion/demovideo.MP4
+
+.venv/
+__pycache__/

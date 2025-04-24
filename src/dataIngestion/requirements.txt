@@ -1,5 +1,5 @@
 # requirements.txt
-
+sentence_transformers
 torch
 moviepy
 speechrecognition

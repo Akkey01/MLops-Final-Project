@@ -1,5 +1,6 @@
 def should_use_gpu(data):
-    return data['useGpu'] == True
+
+    return data["useGpu"] == True
 
 async def route_inference(data):
     if should_use_gpu(data):

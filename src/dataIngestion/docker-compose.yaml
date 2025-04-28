@@ -11,27 +11,29 @@ services:
       context: .
       dockerfile: whisperModelDownloader.Dockerfile
     volumes:
-      - whisper_model:/app/model
+      - whisper_model:/root/.cache/whisper
+    command: >
+      sh -c "python3 -c 'import whisper; whisper.load_model(\"large\")'"
 
   multimedia-handler:
     build:
       context: .
-      dockerfile: multimediaHandler.dockerfile
+      dockerfile: multimediaHandler.Dockerfile
     volumes:
-      - whisper_model:/data/model
+      - whisper_model:/root/.cache/whisper
       - extracted_audio:/data/audio/files
       - text_files:/data/files
     depends_on:
       - whisper-setup
 
-    backend:
-      build:
-        context: ../backend/
-        dockerfile: .
-      volumes:
-        - whisper_model:/data/model
-        - extracted_audio:/data/audio/files
-        - text_files:/data/files
-      depends_on:
-        - whisper-setup
-        - multimedia-handler
+  # backend:
+  #   build:
+  #     context: ../backend/
+  #     dockerfile: .
+  #   volumes:
+  #     - whisper_model:/data/model
+  #     - extracted_audio:/data/audio/files
+  #     - text_files:/data/files
+  #   depends_on:
+  #     - whisper-setup
+  #     - multimedia-handler

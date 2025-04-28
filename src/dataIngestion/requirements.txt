@@ -3,5 +3,5 @@ sentence_transformers
 torch
 moviepy
 speechrecognition
-git+https://github.com/openai/whisper.git
 PyPDF2
+git+https://github.com/openai/whisper.git

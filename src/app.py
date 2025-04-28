@@ -1,6 +1,5 @@
 import os
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from dataIngestion.model import getAudioFileFromVideo
 from backend.orchestrator import route_inference
 
 app = FastAPI(
@@ -32,8 +31,9 @@ async def predict(
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
 
     try:
+
         # Call your audio file processor
-        output = getAudioFileFromVideo(file)
+        output = await route_inference(useGpu, file)
 
         # Optionally call orchestrator if needed
         # result = await route_inference(output, useGpu)

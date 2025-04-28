@@ -3,8 +3,10 @@ import sys
 
 if __name__ == "__main__":
 
-    if len(sys.argv) < 1:
-        print("Usage: python multimediaHandler.py <file1> <file2> ...")
+    print("Invoked")
+
+    if len(sys.argv) < 2:
+        print("Usage: python main.py <file1> <file2> ...")
         sys.exit(1)
 
     test_files = sys.argv[1:]  # Get all file arguments

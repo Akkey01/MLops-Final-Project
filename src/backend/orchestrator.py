@@ -1,10 +1,15 @@
+from hardware_optimized import getInferenceOnGPU
+from dataIngestion.multimediaHandler import MultiMediaHandler
+
 def should_use_gpu(data):
 
     return data["useGpu"] == True
 
-async def route_inference(data):
+async def route_inference(data, file):
     if should_use_gpu(data):
-        response = await call_gpu_inference_service(data)
+        response = await getInferenceOnGPU(file)
     else:
-        response = await call_cpu_inference_service(data)
+        handler = MultiMediaHandler(file)
+        respone = handler.process()
+        
     return response

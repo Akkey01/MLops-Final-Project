@@ -80,7 +80,8 @@ def benchmark_session(ort_session):
     print(f"Batch Throughput: {batch_fps:.2f} FPS")
 
 #CUDA execution provider
-onnx_model_path = "./models/IMP.onnx"
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
-benchmark_session(ort_session)
-ort.get_device()
+def getInferenceOnGPU():
+    onnx_model_path = "./models/IMP.onnx"
+    ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
+    benchmark_session(ort_session)
+    ort.get_device()

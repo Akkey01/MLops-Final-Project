@@ -12,5 +12,7 @@ if __name__ == "__main__":
     for file in test_files:
         print("\nProcessing file:", file)
         handler = MultiMediaHandler(file)
+
         result = handler.process()
         print("Result:", result)
+        

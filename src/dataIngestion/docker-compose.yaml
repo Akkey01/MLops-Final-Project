@@ -11,27 +11,47 @@ services:
       context: .
       dockerfile: whisperModelDownloader.Dockerfile
     volumes:
-      - whisper_model:/app/model
+      - whisper_model:/root/.cache/whisper
+    command: >
+      sh -c "python3 -c 'import whisper; whisper.load_model(\"large\")'"
 
   multimedia-handler:
     build:
       context: .
-      dockerfile: multimediaHandler.dockerfile
+      dockerfile: multimediaHandler.Dockerfile
     volumes:
-      - whisper_model:/data/model
+      - whisper_model:/root/.cache/whisper
       - extracted_audio:/data/audio/files
       - text_files:/data/files
     depends_on:
       - whisper-setup
 
-    backend:
-      build:
-        context: ../backend/
-        dockerfile: .
-      volumes:
-        - whisper_model:/data/model
-        - extracted_audio:/data/audio/files
-        - text_files:/data/files
-      depends_on:
-        - whisper-setup
-        - multimedia-handler
+  # backend:
+  #   build:
+  #     context: ../backend/
+  #     dockerfile: .
+  #   volumes:
+  #     - whisper_model:/data/model
+  #     - extracted_audio:/data/audio/files
+  #     - text_files:/data/files
+  #   depends_on:
+  #     - whisper-setup
+  #     - multimedia-handler
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin

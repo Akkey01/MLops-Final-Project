@@ -1,56 +1,29 @@
-# This file is used to generate the following output for the report.
-# 1. Model Size
-# 2. Throughout for Batch Inference
-# 3. Latency for online (Single sample)
-# 4. Concurrency requirements for not on device deployments
-# 5. Convert Model to ONNX version
-# 6. System Level Optimisation to support required level of optimisation
-import torch
-import onnx
-import onnxruntime as ort
 import os
+import time
+import numpy as np
+import onnxruntime as ort
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
 
-# Load the model from .pth file
-model_path = "./models/IMP.pth"
-device = torch.device("cpu")
-# weights_only=False indicates that the model file contains both the model architecture 
-# and its weights (not just state_dict). This is important for exporting to ONNX.
-model = torch.load(model_path, map_location=device, weights_only=False)
-onnx_model_path = "./models/IMP.onnx"
-optimized_model_path = "./models/IMP_optimized.onnx"
+# Prepare test dataset
+# Need to change this and make it IMP specific
+food_11_data_dir = os.getenv("FOOD11_DATA_DIR", "Food-11")
+val_test_transform = transforms.Compose([
+    transforms.Resize(224),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+test_dataset = datasets.ImageFolder(root=os.path.join(food_11_data_dir, 'evaluation'), transform=val_test_transform)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
-# Need to look into dummy input size
-
-dummy_input = torch.randn(1, 3, 224, 224)  
-torch.onnx.export(model, dummy_input, onnx_model_path,
-                  export_params=True, opset_version=20,
-                  do_constant_folding=True, input_names=['input'],
-                  output_names=['output'], dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}})
-
-print(f"ONNX model saved to {onnx_model_path}")
-
-onnx_model = onnx.load(onnx_model_path)
-onnx.checker.check_model(onnx_model)
-
-# Graph Optimisation
-session_options = ort.SessionOptions()
-session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED # apply graph optimizations
-session_options.optimized_model_filepath = optimized_model_path 
-
-ort_session = ort.InferenceSession(onnx_model_path, sess_options=session_options, providers=['CPUExecutionProvider'])
-
-onnx_model_path = "./models/IMP_optimized.onnx"
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
-benchmark_session(ort_session)
 
 def benchmark_session(ort_session):
 
     print(f"Execution provider: {ort_session.get_providers()}")
-    model_size = os.path.getsize(onnx_model_path) 
-    print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
 
     ## Benchmark accuracy
-    # Need to write custom logic for testing we aint dealing with images
+    # Custom logic to test the accuracy for our model
     correct = 0
     total = 0
     for images, labels in test_loader:
@@ -105,3 +78,10 @@ def benchmark_session(ort_session):
 
     batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
     print(f"Batch Throughput: {batch_fps:.2f} FPS")
+
+#CUDA execution provider
+def getInferenceOnGPU():
+    onnx_model_path = "./models/IMP.onnx"
+    ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
+    benchmark_session(ort_session)
+    ort.get_device()

@@ -6,7 +6,6 @@ import os
 
 # def embedding(chunks):
 
-   
 
    
 model = SentenceTransformer("all-MiniLM-L6-v2")

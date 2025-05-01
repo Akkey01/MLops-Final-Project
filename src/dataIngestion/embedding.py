@@ -5,18 +5,6 @@ from sentence_transformers import SentenceTransformer
 import os
 
 # def embedding(chunks):
-    # # TOGETHER_API_KEY = ""  # paste the key from your dashboard
-
-    # # TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-    # # embedder = OpenAIEmbeddings(openai_api_key=TOGETHER_API_KEY)
-    # embedder = OpenAIEmbeddings(
-    #     openai_api_key=""
-    # )
-    # # Batch-embed all chunks
-    # # texts = [c["text"] for c in chunks]
-    # embeddings = embedder.embed_documents(chunks)
-    # print(embeddings)
-    # # embeddings is List[List[float]]
 
    
 

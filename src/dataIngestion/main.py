@@ -16,9 +16,4 @@ if __name__ == "__main__":
         handler = MultiMediaHandler(file)
 
         result = handler.process()
-<<<<<<< HEAD
         print("Result:", result)
-        
-=======
-        print("Result:", result)
->>>>>>> 62be11b1f45ddcbfee65258a35909a2b4b05735a

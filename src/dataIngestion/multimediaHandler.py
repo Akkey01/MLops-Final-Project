@@ -40,7 +40,7 @@ class MultiMediaHandler:
             raw_text = f.read()
 
         post_process_text(raw_text, source_type="audio")
-        return "Audio file processed and chunked"
+        return post_process_text
 
     def videoHandler(self):
         """

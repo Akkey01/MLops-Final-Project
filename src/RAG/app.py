@@ -1,5 +1,7 @@
 import streamlit as st
+import os
 
+DATA_ROOT = os.getenv("DATA_DIR", "ami_public_manual_1.6.2")
 # ── 1) Must be very first Streamlit call ────────────────────────────────────────
 st.set_page_config(page_title="RAG Chat", page_icon="🤖")
 
@@ -104,7 +106,7 @@ def ask_rag(query, idx, chunked, emb_model, k=5):
 st.title("📚 RAG-Powered Chat")
 
 # 1) Input for root folder & build index
-root = st.text_input("📂 Root folder for docs", "F:\\rag-ami\\ami_public_manual_1.6.2")
+root = st.text_input("📂 Root folder for docs", DATA_ROOT)
 if st.button("🔄 Build/Refresh Index"):
     idx, chunked, emb_model, error = build_index(root)
     if error:

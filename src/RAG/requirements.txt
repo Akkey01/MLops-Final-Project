@@ -7,4 +7,3 @@ python-docx
 beautifulsoup4
 html2text
 transformers
-llama-cpp-python

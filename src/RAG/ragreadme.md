@@ -21,5 +21,12 @@ Docker
 	docker build -t rag-chat-app .
 
 	docker run -p 8501:8501 rag-chat-app
+ If you wish to use a different data source or your own folder, you can override:
+ 	docker run -p 8501:8501 \
+  	-e DATA_DIR=/app/ami_data \
+ 	-v /your/local/AMI:/app/ami_data \
+ 	rag-chat
+
+  
 
 

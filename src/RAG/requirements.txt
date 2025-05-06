@@ -1,0 +1,9 @@
+streamlit
+sentence-transformers
+faiss-cpu
+requests
+pdfplumber
+python-docx
+beautifulsoup4
+html2text
+transformers

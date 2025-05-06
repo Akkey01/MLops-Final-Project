@@ -7,13 +7,13 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 ### Contributors
 
 
-| Name                            | Responsible for                          | Link to their commits in this repo |
-|---------------------------------|------------------------------------------|------------------------------------|
-| All team members                |                                          |                                    |
-| Akshat Mishra                   | data pipeline                            |                                    |
-| Siddhant Mohan                  | model training                           |                                    |
-| Mihir Khare                     | model serving & monitoring               |                                    |
-| Nikita Gupta                    | continuous X pipeline                    |                                    |
+| Name                            | Responsible for                          | Link to their commits in this repo                                                |
+|---------------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
+| All team members                |                                          |                                                                                   |
+| Akshat Mishra                   | data pipeline                            |                                                                                   |
+| Siddhant Mohan                  | model training                           |                                                                                   |
+| Mihir Khare                     | model serving & monitoring               | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Mihir-Khare429|
+| Nikita Gupta                    | continuous X pipeline                    |                                                                                   |
 
 
 

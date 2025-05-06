@@ -9,7 +9,7 @@ from transformers import GPT2TokenizerFast
 import tempfile
 
 # ── UI: page config & custom CSS ─────────────────────────────────────────────
-st.set_page_config(page_title="RAG Chat+", page_icon="🤖")
+st.set_page_config(page_title="Intelligent Multimedia Processing For Enterprise, Mihir Sir ke liye ", page_icon="🤖")
 st.markdown(
     """
     <style>

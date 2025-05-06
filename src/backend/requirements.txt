@@ -2,3 +2,5 @@ fastapi[standard]
 onnx
 uvicorn[standard]
 torch
+onnxruntime
+torchvision

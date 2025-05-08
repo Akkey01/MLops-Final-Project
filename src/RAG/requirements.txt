@@ -8,3 +8,4 @@ beautifulsoup4
 html2text
 transformers
 nbformat
+nltk

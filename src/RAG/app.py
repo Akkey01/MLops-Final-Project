@@ -1,6 +1,6 @@
 # app.py
 
-import os, tempfile
+import os
 import streamlit as st
 import pdfplumber, html2text, xml.etree.ElementTree as ET
 from docx import Document
@@ -9,10 +9,14 @@ from sentence_transformers import SentenceTransformer
 import faiss, numpy as np, requests
 from transformers import GPT2TokenizerFast
 import nbformat
+import nltk
 
-# ── CONFIGURATION ─────────────────────────────────────────────────────────────
-# Your Together.ai API key
+# ── Ensure NLTK model ───────────────────────────────────────────────────────────
+nltk.download("punkt", quiet=True)
+
+# ── CONFIG ──────────────────────────────────────────────────────────────────────
 TOG_KEY = "cc4b628095c0531f06fe08ff20e1f0bad8cf4e6c39ed2b3c70744a6278a7faab"
+DATA_ROOT = os.getenv("DATA_DIR", "ami_data")  # your base corpus path
 
 # ── PAGE SETUP & CSS ──────────────────────────────────────────────────────────
 st.set_page_config(page_title="RAG Chat+", layout="wide")
@@ -32,7 +36,8 @@ st.markdown("<div class='title'>💬 RAG Chat — Ask Anything from Your Docs</d
 
 # ── FILE READERS ────────────────────────────────────────────────────────────────
 def extract_text_from_pdf(p): 
-    return "\n".join(page.extract_text() or "" for page in pdfplumber.open(p).pages)
+    with pdfplumber.open(p) as pdf:
+        return "\n".join(page.extract_text() or "" for page in pdf.pages)
 def extract_text_from_docx(p): 
     return "\n".join(para.text for para in Document(p).paragraphs)
 def extract_text_from_html(p):
@@ -64,8 +69,7 @@ def read_any_file(fp):
 # ── SMART CHUNKING ─────────────────────────────────────────────────────────────
 tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 def chunk_text(text, max_tokens=500):
-    # chunk by sentences then pack to ~max_tokens
-    from nltk import sent_tokenize
+    from nltk.tokenize import sent_tokenize
     sents = sent_tokenize(text)
     chunks, cur, ct = [], [], 0
     for s in sents:
@@ -79,56 +83,43 @@ def chunk_text(text, max_tokens=500):
     if cur: chunks.append(" ".join(cur))
     return chunks
 
-# ── BUILD & CACHE INDEX ────────────────────────────────────────────────────────
+# ── BUILD BASE INDEX ───────────────────────────────────────────────────────────
 @st.cache_data
-def build_index(root="ami_data"):
-    # load all files on disk + uploads
+def build_base_index(root=DATA_ROOT):
     docs = []
     for dp, _, files in os.walk(root):
         for f in files:
             fp = os.path.join(dp, f)
             try: docs.append({"fn": f, "txt": read_any_file(fp)})
             except: pass
-    # initial error?
-    if not docs: return None, None, None, "No documents found in DATA_DIR."
-    # chunk & embed
-    chunked = []
+    if not docs:
+        return None, None, None, "No base documents found."
+    # chunk + embed
+    base_chunks = []
     for d in docs:
         for c in chunk_text(d["txt"]):
-            chunked.append({"fn": d["fn"], "chunk": c})
+            base_chunks.append({"fn": d["fn"], "chunk": c})
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    embs = model.encode([c["chunk"] for c in chunked]).astype("float32")
+    embs = model.encode([c["chunk"] for c in base_chunks]).astype("float32")
     idx = faiss.IndexFlatL2(embs.shape[1])
     idx.add(embs)
-    return idx, chunked, model, None
+    return idx, base_chunks, model, None
 
-# ── GENERATION ─────────────────────────────────────────────────────────────────
-def generate_answer(prompt):
-    r = requests.post("https://api.together.xyz/v1/completions",
-        headers={"Authorization": f"Bearer {TOG_KEY}", "Content-Type": "application/json"},
-        json={"model":"mistralai/Mixtral-8x7B-Instruct-v0.1","prompt":prompt,
-              "max_tokens":512,"temperature":0.3,"top_p":0.9}
-    ).json()
-    if "choices" in r: return r["choices"][0].get("text","")
-    if r.get("output") and "choices" in r["output"]:
-        return r["output"]["choices"][0].get("text","")
-    st.error(f"Unexpected response: {r}")
-    return ""
+# ── INIT STATE ─────────────────────────────────────────────────────────────────
+if "base_idx" not in st.session_state:
+    st.session_state.base_idx, st.session_state.base_chunks, st.session_state.model, st.session_state.err = build_base_index()
 
-def ask_rag(q, idx, chunked, model, k=5):
-    qv = model.encode([q]).astype("float32")
-    D, I = idx.search(qv, k)
-    ctx = "\n\n".join(chunked[i]["chunk"] for i in I[0])
-    return generate_answer(f"Context:\n{ctx}\n\nQuestion: {q}\nAnswer:")
+# create empty upload index
+if "upload_idx" not in st.session_state and not st.session_state.err:
+    dim = st.session_state.base_idx.d  # dimension
+    st.session_state.upload_idx = faiss.IndexFlatL2(dim)
+    st.session_state.upload_chunks = []
 
-# ── INITIAL INDEX BUILT ────────────────────────────────────────────────────────
-if "idx" not in st.session_state:
-    st.session_state.idx, st.session_state.chunked, st.session_state.model, st.session_state.err = build_index()
-
+# error on base
 if st.session_state.err:
     st.error(st.session_state.err)
 
-# ── UPLOAD & INCREMENTAL INDEXING ─────────────────────────────────────────────
+# ── UPLOAD & INDEX ─────────────────────────────────────────────────────────────
 st.sidebar.header("📤 Upload & Index Files")
 ufs = st.sidebar.file_uploader(
     "Supported: pdf, docx, txt, md, html, xml, ipynb", 
@@ -137,7 +128,7 @@ ufs = st.sidebar.file_uploader(
 )
 if ufs:
     os.makedirs("uploads", exist_ok=True)
-    new_total = 0
+    new_count = 0
     for f in ufs:
         dst = os.path.join("uploads", f.name)
         with open(dst, "wb") as out: out.write(f.getbuffer())
@@ -145,33 +136,67 @@ if ufs:
             txt = read_any_file(dst)
             new_chunks = [{"fn": f.name, "chunk": c} for c in chunk_text(txt)]
             embs = st.session_state.model.encode([c["chunk"] for c in new_chunks]).astype("float32")
-            st.session_state.idx.add(embs)
-            st.session_state.chunked.extend(new_chunks)
-            new_total += len(new_chunks)
+            st.session_state.upload_idx.add(embs)
+            st.session_state.upload_chunks.extend(new_chunks)
+            new_count += len(new_chunks)
         except Exception as e:
             st.sidebar.error(f"Error indexing {f.name}: {e}")
-    st.sidebar.success(f"Indexed {new_total} new chunks.")
+    st.sidebar.success(f"Indexed {new_count} new chunks from uploads.")
 
-# ── CHAT HISTORY UI ────────────────────────────────────────────────────────────
+# ── GENERATOR ──────────────────────────────────────────────────────────────────
+def generate_answer(prompt):
+    r = requests.post("https://api.together.xyz/v1/completions",
+        headers={"Authorization": f"Bearer {TOG_KEY}", "Content-Type":"application/json"},
+        json={"model":"mistralai/Mixtral-8x7B-Instruct-v0.1","prompt":prompt,
+              "max_tokens":512,"temperature":0.3,"top_p":0.9}
+    ).json()
+    if "choices" in r:
+        return r["choices"][0].get("text","")
+    if r.get("output") and "choices" in r["output"]:
+        return r["output"]["choices"][0].get("text","")
+    return "⚠️ Unexpected response."
+
+def ask_rag(query, k=5):
+    # greeting?
+    if query.strip().lower() in ("hi","hello","hey"):
+        return "Hello! How can I help you today?"
+
+    base_idx = st.session_state.base_idx
+    upload_idx = st.session_state.upload_idx
+    base_chunks = st.session_state.base_chunks
+    upload_chunks = st.session_state.upload_chunks
+    model = st.session_state.model
+
+    # search uploads first
+    ctx_list = []
+    if upload_idx.ntotal > 0:
+        _, Iu = upload_idx.search(model.encode([query]).astype("float32"), min(k, upload_idx.ntotal))
+        for i in Iu[0]:
+            ctx_list.append(upload_chunks[i]["chunk"])
+    # then fill from base
+    remaining = k - len(ctx_list)
+    if remaining > 0:
+        _, Ib = base_idx.search(model.encode([query]).astype("float32"), remaining)
+        for i in Ib[0]:
+            ctx_list.append(base_chunks[i]["chunk"])
+
+    context = "\n\n".join(ctx_list)
+    prompt = f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
+    return generate_answer(prompt)
+
+# ── CHAT HISTORY & INPUT ──────────────────────────────────────────────────────
 if "history" not in st.session_state:
     st.session_state.history = []
 
 # display history
-for q,a in st.session_state.history:
+for q, a in st.session_state.history:
     st.markdown(f"<div class='user-query'><b>You:</b> {q}</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='bot-response'><b>RAG:</b> {a}</div>", unsafe_allow_html=True)
 
-# form at bottom
-with st.form("chat_form", clear_on_submit=True):
+# input form
+with st.form("chat", clear_on_submit=True):
     query = st.text_input("Ask a question", placeholder="Type and press Enter")
     submitted = st.form_submit_button("Ask")
     if submitted and query:
-        if st.session_state.err:
-            st.error("No documents indexed.")
-        else:
-            ans = ask_rag(query,
-                          st.session_state.idx,
-                          st.session_state.chunked,
-                          st.session_state.model)
-            st.session_state.history.append((query, ans))
-            st.experimental_rerun()
+        answer = ask_rag(query)
+        st.session_state.history.append((query, answer))

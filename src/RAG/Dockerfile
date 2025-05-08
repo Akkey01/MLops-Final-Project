@@ -27,16 +27,19 @@ RUN mkdir -p ${DATA_DIR} && \
     tar -xzf /tmp/ami.tar.gz -C ${DATA_DIR} --strip-components=1 && \
     rm /tmp/ami.tar.gz
 
-# 5. Install Python dependencies
+# 5. Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# 6. Copy application code (including app.py, uploads/, ami_public_manual_1.6.2/ etc.)
+# 5.b Download NLTK tokenizer data for sentence chunking
+RUN python -m nltk.downloader punkt punkt_tab
+
+# 6. Copy application code and any data folders
 COPY . .
 
 # 7. Expose Streamlit port
 EXPOSE 8501
 
-# 8. Entrypoint: run Streamlit
+# 8. Entrypoint: launch the Streamlit app
 ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

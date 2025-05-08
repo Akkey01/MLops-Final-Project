@@ -2,12 +2,12 @@ FROM python:3.10-slim-buster
 
 WORKDIR /app
 
-COPY ./backend/requirements.txt .
-COPY ./dataIngestion /dataIngestion
-COPY ./app.py .
+COPY ./backend /app/backend  
+COPY ./dataIngestion /app/dataIngestion
+COPY ./app.py /app/app.py
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-RUN pip install -r requirements.txt
+RUN pip install -r /app/backend/requirements.txt
 
 EXPOSE 8000
 

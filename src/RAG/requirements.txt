@@ -7,3 +7,4 @@ python-docx
 beautifulsoup4
 html2text
 transformers
+nbformat

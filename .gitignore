@@ -20,3 +20,25 @@ src/backend/tinyllama11b_chat_ft1
 __pycache__/
 
 ICSI/
+
+# Terraform artefacts
+*.tfstate*
+.terraform/
+
+# Credentials
+openrc*.sh
+*.pem
+# Ignore Jupyter checkpoints
+**/.ipynb_checkpoints/
+
+# Terraform plan & lock files
+*.plan
+.terraform.lock.hcl
+
+# Any compiled Python files or caches
+__pycache__/
+*.py[cod]
+
+# Local-only downloads or credentials
+openrc*.sh
+*.pem

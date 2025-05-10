@@ -1,0 +1,35 @@
+---
+# ================================================================
+#  Master playbook : runs every sub-playbook in the professor's order
+# ================================================================
+- name: 00 | base host tweaks, packages, users
+  import_playbook: general/hello_host.yml        # or general.yml / all.yaml
+
+- name: 01 | pre-Kubernetes OS configuration
+  import_playbook: pre_k8s/pre_k8s_configure.yml
+
+- name: 02 | bootstrap / init the Kubernetes cluster
+  import_playbook: k8s/inventory/mycluster/hosts.yml
+
+- name: 03 | post-K8s tweaks (CNI, Helm, metrics-server …)
+  import_playbook: post_k8s/post_k8s_configure.yml
+
+# ── Argo CD applications ─────────────────────────────────────────
+- name: 04 | deploy platform namespace (MinIO, MLflow, Grafana …)
+  import_playbook: argocd/argocd_add_platform.yml
+
+- name: 05 | deploy staging environment
+  import_playbook: argocd/argocd_add_staging.yml
+
+- name: 06 | deploy production environment
+  import_playbook: argocd/argocd_add_prod.yml
+
+- name: 07 | deploy canary environment
+  import_playbook: argocd/argocd_add_canary.yml
+
+# ── WorkflowTemplates for build / deploy pipeline ───────────────
+- name: 08 | register Argo Workflows templates
+  import_playbook: argocd/workflow_templates_apply.yml
+
+
+

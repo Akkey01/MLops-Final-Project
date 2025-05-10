@@ -6,3 +6,5 @@ onnxruntime
 torchvision
 transformers
 safetensors
+prometheus_fastapi_instrumentator
+prometheus_client

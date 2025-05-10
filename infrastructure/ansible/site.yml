@@ -30,3 +30,6 @@
 # ── WorkflowTemplates for build / deploy pipeline ───────────────
 - name: 08 | register Argo Workflows templates
   import_playbook: argocd/workflow_templates_apply.yml
+
+
+

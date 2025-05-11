@@ -115,8 +115,8 @@ spec:
         requests:
           memory: "1500Mi"
       args:
-        - --dockerfile=/mnt/workspace/MLops-Final-Project/src/Dockerfile
-        - --context=/mnt/workspace/MLops-Final-Project
+        - --dockerfile=/mnt/workspace/src/Dockerfile
+        - --context=/mnt/workspace
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.{{inputs.parameters.model-version}}
         - --insecure
       volumeMounts:

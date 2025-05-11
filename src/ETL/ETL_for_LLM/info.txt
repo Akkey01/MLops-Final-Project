@@ -1,0 +1,3 @@
+etl running at cd ~/my-etl
+
+rag ami data at cd /mnt/block/raw/newami/

@@ -55,8 +55,8 @@ spec:
       image: gcr.io/kaniko-project/executor:latest
       command: ["/kaniko/executor"]
       args:
-        - --dockerfile=Dockerfile
-        - --context=/mnt/workspace/MLops-Final-Project/src
+        - --dockerfile=/mnt/workspace/src/Dockerfile
+        - --context=/mnt/workspace/src
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0

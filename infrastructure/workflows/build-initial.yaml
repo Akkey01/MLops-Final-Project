@@ -57,6 +57,7 @@ spec:
         - --destination=registry.kube-system.svc.cluster.local:8000/imps-app:canary-1.0.0
         - --destination=registry.kube-system.svc.cluster.local:8000/imps-app:production-1.0.0
         - --insecure
+        - --skip-tls-verify
       volumeMounts:
         - name: workdir
           mountPath: /mnt/workspace

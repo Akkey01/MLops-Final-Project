@@ -1,0 +1,8 @@
+# ETL “transform” stage dependencies
+requests           # for Whisper & RAG HTTP calls
+tqdm               # progress bars
+nltk               # sentence tokenization
+sentence-transformers  # embedding model
+faiss-cpu          # Faiss index
+pyyaml             # splits.yaml parsing
+transformers       # GPT2 tokenizer

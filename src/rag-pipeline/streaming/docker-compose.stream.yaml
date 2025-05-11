@@ -1,0 +1,19 @@
+services:
+  simulator:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt/block:/data         # block store (must contain processed/prod_seed_chunks.jsonl and metrics/)
+    working_dir: /app/streaming
+    env_file:
+      - ../.env                  # brings in RAG_ENDPOINT_URL
+    entrypoint: ["/bin/bash","-lc"]
+    command: >
+      pip install requests && \
+      # ensure metrics dir exists
+      mkdir -p /data/metrics && \
+      # stream production‐seed chunks into your RAG endpoint
+      python simulate_requests.py \
+        --prod_json /data/processed/prod_seed_chunks.jsonl \
+        --endpoint ${RAG_ENDPOINT_URL} \
+        --rate 0.2

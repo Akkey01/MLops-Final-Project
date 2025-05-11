@@ -63,7 +63,7 @@ services:
       - /mnt-block:/data
     working_dir: /app/etl/transform
     env_file:
-      - ../.env
+      - ./.env
     depends_on:
       - extract-icsi
     command: >
@@ -79,7 +79,7 @@ services:
       - /mnt-block:/data
     working_dir: /app/etl/transform
     env_file:
-      - ../.env
+      - ./.env
     depends_on:
       - convert-video
     command: >
@@ -129,7 +129,8 @@ services:
     depends_on:
       - embed-index
     environment:
-      - RCLONE_CONTAINER=object-persist-project39
+      - RCLONE_REMOTE=chi_tacc
+      - RCLONE_CONTAINER=object-persist-project39   # <— your bucket name
     entrypoint: /bin/sh
     command: >
-      -c "rclone copy /data/faiss_base chi_tacc:$RCLONE_CONTAINER/faiss_base --progress"
+      -c "rclone copy /data/faiss_base $RCLONE_REMOTE:$RCLONE_CONTAINER/faiss_base --progress"

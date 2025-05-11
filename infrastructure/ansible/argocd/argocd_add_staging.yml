@@ -1,11 +1,11 @@
 ---
-- name: Deploy IMPS Staging via ArgoCD & Helm
+- name: Deploy imps Staging via ArgoCD & Helm
   hosts: node1
   become: yes
   vars:
-    app_name: IMPS-staging
+    app_name: imps-staging
     repo_url: https://github.com/Akkey01/MLops-Final-Project.git
-    app_path: k8s/staging
+    app_path: infrastructure/k8s/staging
     argocd_namespace: argocd
 
   tasks:
@@ -31,8 +31,8 @@
       set_fact:
         external_ip: "{{ ansible_all_ipv4_addresses | select('match', '^10\\.56\\..*') | list | first }}"
 
-    - name: Create IMPS-staging namespace if missing
-      command: kubectl create namespace IMPS-staging
+    - name: Create imps-staging namespace if missing
+      command: kubectl create namespace imps-staging
       register: ns_create
       failed_when: ns_create.rc != 0 and "AlreadyExists" not in ns_create.stderr
       changed_when: "'created' in ns_create.stdout"

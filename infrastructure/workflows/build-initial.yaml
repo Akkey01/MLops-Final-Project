@@ -49,6 +49,7 @@ spec:
   - name: kaniko
     container:
       image: gcr.io/kaniko-project/executor:latest
+      command: ["/kaniko/executor"]
       args:
         - --dockerfile=/mnt/workspace/work/MLops-Final-Project/src/dataIngestion/docker-compose
         - --context=/mnt/workspace/work/MLops-Final-Project

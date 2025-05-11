@@ -50,11 +50,11 @@ spec:
     container:
       image: gcr.io/kaniko-project/executor:latest
       args:
-        - --dockerfile=/mnt/workspace/Dockerfile
-        - --context=/mnt/workspace
-        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
-        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
-        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0
+        - --dockerfile=/mnt/workspace/work/MLops-Final-Project/src/dataIngestion/docker-compose
+        - --context=/mnt/workspace/work/MLops-Final-Project
+        - --destination=registry.kube-system.svc.cluster.local:8000/imps-app:staging-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:8000/imps-app:canary-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:8000/imps-app:production-1.0.0
         - --insecure
       volumeMounts:
         - name: workdir

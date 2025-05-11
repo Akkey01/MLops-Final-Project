@@ -4,6 +4,7 @@ metadata:
   generateName: kaniko-pvc-build-
 spec:
   entrypoint: kaniko-build-flow
+
   volumeClaimTemplates:
   - metadata:
       name: workdir
@@ -42,26 +43,26 @@ spec:
             echo "Git clone failed after $MAX_RETRIES attempts."
             exit 1
           fi
+
+          echo "Repo successfully cloned. Listing contents:"
+          ls -R /mnt/workspace
       volumeMounts:
-      - name: workdir
-        mountPath: /mnt/workspace
+        - name: workdir
+          mountPath: /mnt/workspace
 
   - name: kaniko
     container:
-        image: gcr.io/kaniko-project/executor:latest
-        command: ["/kaniko/executor"]
-        args:
-          - --dockerfile=Dockerfile
-          - --context=/mnt/workspace/MLops-Final-Project/src
-          - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
-          - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
-          - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0
-          - --insecure
-          - --skip-tls-verify
-          - --verbosity=debug
-        volumeMounts:
-          - name: workdir
-            mountPath: /mnt/workspace
-
-
-
+      image: gcr.io/kaniko-project/executor:latest
+      command: ["/kaniko/executor"]
+      args:
+        - --dockerfile=Dockerfile
+        - --context=/mnt/workspace/MLops-Final-Project/src
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0
+        - --insecure
+        - --skip-tls-verify
+        - --verbosity=debug
+      volumeMounts:
+        - name: workdir
+          mountPath: /mnt/workspace

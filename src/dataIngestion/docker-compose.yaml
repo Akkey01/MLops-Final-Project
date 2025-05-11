@@ -6,37 +6,32 @@ volumes:
   text_files: {}
 
 services:
-  whisper-setup:
-    build:
-      context: .
-      dockerfile: whisperModelDownloader.Dockerfile
-    volumes:
-      - whisper_model:/root/.cache/whisper
-    command: >
-      sh -c "python3 -c 'import whisper; whisper.load_model(\"large\")'"
+  # whisper-setup:
+  #   build:
+  #     context: .
+  #     dockerfile: whisperModelDownloader.Dockerfile
+  #   volumes:
+  #     - whisper_model:/root/.cache/whisper
+  #   command: >
+  #     sh -c "python3 -c 'import whisper; whisper.load_model(\"large\")'"
 
-  multimedia-handler:
-    build:
-      context: .
-      dockerfile: multimediaHandler.Dockerfile
-    volumes:
-      - whisper_model:/root/.cache/whisper
-      - extracted_audio:/data/audio/files
-      - text_files:/data/files
-    depends_on:
-      - whisper-setup
+  # multimedia-handler:
+  #   build:
+  #     context: .
+  #     dockerfile: multimediaHandler.Dockerfile
+  #   volumes:
+  #     - whisper_model:/root/.cache/whisper
+  #     - extracted_audio:/data/audio/files
+  #     - text_files:/data/files
+  #   depends_on:
+  #     - whisper-setup
 
   backend:
     build:
       context: ../
       dockerfile: Dockerfile
-    volumes:
-      - whisper_model:/data/model
-      - extracted_audio:/data/audio/files
-      - text_files:/data/files
-    depends_on:
-      - whisper-setup
-      - multimedia-handler
+    ports:
+      - "8000:8000"
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus

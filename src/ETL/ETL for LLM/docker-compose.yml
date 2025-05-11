@@ -4,9 +4,11 @@ services:
     image: python:3.11-slim
     working_dir: /data
     volumes:
-      - /mnt/block:/data                      # raw + processed live here
+      - /mnt/block:/data
       - ./extract-data.sh:/data/extract-data.sh:ro
-    entrypoint: ["bash", "/data/extract-data.sh"]
+      - ./wget.txt:/data/wget.txt:ro
+    entrypoint: ["bash","/data/extract-data.sh"]
+
 
   transform-data:
     image: python:3.11-slim
@@ -14,7 +16,7 @@ services:
     volumes:
       - /mnt/block:/data
       - ./transform-data.sh:/data/transform-data.sh:ro
-    entrypoint: ["bash", "/data/transform-data.sh"]
+    entrypoint: ["bash","/data/transform-data.sh"]
 
   load-data:
     image: rclone/rclone:latest
@@ -23,6 +25,6 @@ services:
       RCLONE_CONTAINER: object-persist-project39
     volumes:
       - /mnt/block:/data
-      - /home/cc/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
       - ./load-data.sh:/data/load-data.sh:ro
-    entrypoint: ["sh", "/data/load-data.sh"]
+    entrypoint: ["sh","/data/load-data.sh"]

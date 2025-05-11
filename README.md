@@ -10,10 +10,10 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 | Name                            | Responsible for                          | Link to their commits in this repo                                                |
 |---------------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
 | All team members                |                                          |                                                                                   |
-| Akshat Mishra                   | data pipeline                            |                                                                                   |
-| Siddhant Mohan                  | model training                           |                                                                                   |
+| Akshat Mishra                   | data pipeline                            | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Akkey01       |
+| Siddhant Mohan                  | model training                           | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=siddhantmohan1110|
 | Mihir Khare                     | model serving & monitoring               | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Mihir-Khare429|
-| Nikita Gupta                    | continuous X pipeline                    |                                                                                   |
+| Nikita Gupta                    | continuous X pipeline                    | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=nairanikita   |
 
 
 

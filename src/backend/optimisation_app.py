@@ -1,107 +1,30 @@
-# This file is used to generate the following output for the report.
-# 1. Model Size
-# 2. Throughout for Batch Inference
-# 3. Latency for online (Single sample)
-# 4. Concurrency requirements for not on device deployments
-# 5. Convert Model to ONNX version
-# 6. System Level Optimisation to support required level of optimisation
 import torch
-import onnx
-import onnxruntime as ort
-import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from pathlib import Path
 
-# Load the model from .pth file
-model_path = "./models/IMP.pth"
-device = torch.device("cpu")
-# weights_only=False indicates that the model file contains both the model architecture 
-# and its weights (not just state_dict). This is important for exporting to ONNX.
-model = torch.load(model_path, map_location=device, weights_only=False)
-onnx_model_path = "./models/IMP.onnx"
-optimized_model_path = "./models/IMP_optimized.onnx"
+# Model path
+MODEL_PATH = Path("./backend/tinyllama11b_chat_ft1")
 
-# Need to look into dummy input size
+# Load model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH.as_posix(), local_files_only=True)
+model = AutoModelForCausalLM.from_pretrained(MODEL_PATH.as_posix(), local_files_only=True)
+model.eval()
 
-dummy_input = torch.randn(1, 3, 224, 224)  
-torch.onnx.export(model, dummy_input, onnx_model_path,
-                  export_params=True, opset_version=20,
-                  do_constant_folding=True, input_names=['input'],
-                  output_names=['output'], dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}})
+# Sample input
+sample_text = "Once upon a time"
+inputs = tokenizer(sample_text, return_tensors="pt")
+input_ids = inputs["input_ids"]
 
-print(f"ONNX model saved to {onnx_model_path}")
+# Export to ONNX
+torch.onnx.export(
+    model,
+    args=(input_ids,),
+    f=MODEL_PATH / "model.onnx",
+    input_names=["input_ids"],
+    output_names=["logits"],
+    dynamic_axes={"input_ids": {0: "batch_size", 1: "sequence_length"}},
+    opset_version=13,
+    do_constant_folding=True
+)
 
-onnx_model = onnx.load(onnx_model_path)
-onnx.checker.check_model(onnx_model)
-
-# Graph Optimisation
-session_options = ort.SessionOptions()
-session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED # apply graph optimizations
-session_options.optimized_model_filepath = optimized_model_path 
-
-ort_session = ort.InferenceSession(onnx_model_path, sess_options=session_options, providers=['CPUExecutionProvider'])
-
-onnx_model_path = "./models/IMP_optimized.onnx"
-ort_session = ort.InferenceSession(onnx_model_path, providers=['CPUExecutionProvider'])
-benchmark_session(ort_session)
-
-def benchmark_session(ort_session):
-
-    print(f"Execution provider: {ort_session.get_providers()}")
-    model_size = os.path.getsize(onnx_model_path) 
-    print(f"Model Size on Disk: {model_size/ (1e6) :.2f} MB")
-
-    ## Benchmark accuracy
-    # Need to write custom logic for testing we aint dealing with images
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
-        images_np = images.numpy()
-        outputs = ort_session.run(None, {ort_session.get_inputs()[0].name: images_np})[0]
-        predicted = np.argmax(outputs, axis=1)
-        total += labels.size(0)
-        correct += (predicted == labels.numpy()).sum()
-    accuracy = (correct / total) * 100
-
-    print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
-
-    ## Benchmark inference latency for single sample
-
-    num_trials = 100  # Number of trials
-
-    # Get a single sample from the test data
-
-    single_sample, _ = next(iter(test_loader))  
-    single_sample = single_sample[:1].numpy()
-
-    # Warm-up run
-    ort_session.run(None, {ort_session.get_inputs()[0].name: single_sample})
-
-    latencies = []
-    for _ in range(num_trials):
-        start_time = time.time()
-        ort_session.run(None, {ort_session.get_inputs()[0].name: single_sample})
-        latencies.append(time.time() - start_time)
-
-    print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
-    print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
-    print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
-    print(f"Inference Throughput (single sample): {num_trials/np.sum(latencies):.2f} FPS")
-
-    ## Benchmark batch throughput
-
-    num_batches = 50  # Number of trials
-
-    # Get a batch from the test data
-    batch_input, _ = next(iter(test_loader))  
-    batch_input = batch_input.numpy()
-
-    # Warm-up run
-    ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
-
-    batch_times = []
-    for _ in range(num_batches):
-        start_time = time.time()
-        ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
-        batch_times.append(time.time() - start_time)
-
-    batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
-    print(f"Batch Throughput: {batch_fps:.2f} FPS")
+print(f"Model exported to {MODEL_PATH / 'model.onnx'}")

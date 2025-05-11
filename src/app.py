@@ -1,16 +1,46 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-#from backend.orchestrator import route_inference
+from fastapi import FastAPI, HTTPException,Request, Response
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-import torch
 from pathlib import Path
+import time
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+REQUEST_COUNTER = Counter(
+    "http_requests_total", "Total HTTP requests",
+    ["method", "endpoint", "http_status"]
+)
+
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds", "Request latency in seconds",
+    ["method", "endpoint"]
+)
+
 
 app = FastAPI(
     title="MLOPS Final Project (ONNX)",
     description="API for consuming Intelligent Multimedia Processing using ONNX Runtime",
     version="1.0.0"
 )
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    endpoint = request.url.path
+    method = request.method
+    status_code = str(response.status_code)
+
+    REQUEST_COUNTER.labels(method=method, endpoint=endpoint, http_status=status_code).inc()
+    REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(process_time)
+
+    return response
+
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app, endpoint="/metrics")
 
 ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac"}
 MAX_FILE_SIZE_MB = 50  # Adjusted to match the logic
@@ -46,30 +76,7 @@ def generate_text(prompt: Prompt):
         return {"output": response[0]["generated_text"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-# @app.post("/downloadTextAudioFile") 
-# async def predict(
-#     useGpu: bool = Form(...), 
-#     file: UploadFile = File(...)
-# ):
-#     # Validate file extension
-#     ext = os.path.splitext(file.filename)[-1].lower()
-#     if ext not in ALLOWED_EXTENSIONS:
-#         raise HTTPException(status_code=400, detail="Invalid file type. Only audio files are allowed.")
 
-#     # Read bytes and check file size
-#     contents = await file.read()
-#     if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
-#         raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB.")
-
-#     try:
-
-#         # Call your audio file processor
-#         output = await route_inference(useGpu, file)
-
-#         # Optionally call orchestrator if needed
-#         # result = await route_inference(output, useGpu)
-
-#         return {"audio_text": output}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Failed to process audio: {str(e)}")
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

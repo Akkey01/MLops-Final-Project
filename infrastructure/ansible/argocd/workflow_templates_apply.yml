@@ -4,7 +4,7 @@
   become: yes
   vars:
     repo_url: https://github.com/Akkey01/MLops-Final-Project.git
-    repo_dest: /tmp/IMPS
+    repo_dest: /tmp/imps
     workflow_dir: workflows
     argo_namespace: argo
     templates:

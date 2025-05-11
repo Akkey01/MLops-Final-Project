@@ -1,5 +1,5 @@
 apiVersion: v2
-name: IMPS-production
+name: imps-production
 version: 1.0.0
 description: IMPS Production Deployment
 

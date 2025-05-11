@@ -5,8 +5,8 @@
   vars:
     argocd_username: "admin"
     repo_path: "https://github.com/Akkey01/MLops-Final-Project.git"
-    app_name: "IMPS-platform"
-    app_path: "k8s/platform"
+    app_name: "imps-platform"
+    app_path: "infrastructure/k8s/platform"
     minio_access_key: "your-access-key"
 
   tasks:
@@ -37,18 +37,18 @@
       set_fact:
         external_ip: "{{ ansible_all_ipv4_addresses | select('match', '^10\\.56\\..*') | list | first }}"
 
-    - name: Ensure IMPS-platform namespace exists
-      command: kubectl get namespace IMPS-platform
+    - name: Ensure imps-platform namespace exists
+      command: kubectl get namespace imps-platform
       register: ns_check
       failed_when: false
       changed_when: false
 
-    - name: Create IMPS-platform namespace if missing
+    - name: Create imps-platform namespace if missing
       when: ns_check.rc != 0
-      command: kubectl create namespace IMPS-platform
+      command: kubectl create namespace imps-platform
 
     - name: Check if MinIO secret already exists
-      command: kubectl get secret minio-credentials -n IMPS-platform
+      command: kubectl get secret minio-credentials -n imps-platform
       register: minio_secret_check
       failed_when: false
       changed_when: false
@@ -62,7 +62,7 @@
       when: minio_secret_check.rc != 0
       command: >
         kubectl create secret generic minio-credentials
-        --namespace IMPS-platform
+        --namespace imps-platform
         --from-literal=accesskey={{ minio_access_key }}
         --from-literal=secretkey={{ minio_secret_key }}
       register: minio_secret_create
@@ -70,7 +70,7 @@
     - name: Get existing MinIO secret key if already exists
       when: minio_secret_check.rc == 0
       command: >
-        kubectl get secret minio-credentials -n IMPS-platform -o jsonpath="{.data.secretkey}"
+        kubectl get secret minio-credentials -n imps-platform -o jsonpath="{.data.secretkey}"
       register: existing_secret_b64
 
     - name: Decode existing MinIO secret key

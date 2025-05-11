@@ -52,7 +52,7 @@ spec:
       command: ["/kaniko/executor"]
       args:
         - --dockerfile=/mnt/workspace/src/Dockerfile
-        - --context=/mnt/workspace
+        - --context=/mnt/workspace/src
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0

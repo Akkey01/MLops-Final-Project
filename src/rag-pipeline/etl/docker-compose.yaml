@@ -6,6 +6,7 @@ services:
     user: root
     volumes:
       - /mnt/block:/data
+      - ./:/app/etl:ro
     working_dir: /data/raw
     command: >
       bash -c "
@@ -63,6 +64,7 @@ services:
     user: root
     volumes:
       - whisper-cache:/root/.cache/whisper   # persists downloaded models
+      - ./:/app/etl:ro
     working_dir: /app/etl/transform
     env_file:
       - ./.env

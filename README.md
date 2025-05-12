@@ -265,7 +265,7 @@ Alerting Threshold: Alert if accuracy drops below 92% or latency exceeds 500ms
 Canary Deployment: 10% traffic to new model versions for validation
 
 
-#### Data pipeline
+## Data pipeline
 #### 1. Persistent Storage
 
 1. *Block-storage volume (KVM)*  
@@ -390,42 +390,32 @@ Chunking Configuration: Semantic chunks of 300-500 tokens with 50-token overlap
 Data Retention: Till 15th MAy 2025
 Dashboard Refresh: Real-time metrics with 60-second refresh interval
 
-#### Continuous X
-Strategy
-We'll implement a comprehensive CI/CD pipeline integrated with continuous training and monitoring to ensure both code and model quality. GitOps principles using ArgoCD will enable declarative infrastructure and application deployment, with PythonChi providing Infrastructure as Code capabilities.
-Relevant Parts of the Architecture
+## Continuous X
+Implemented a comprehensive CI/CD pipeline integrated with continuous training to ensure code and model quality. GitOps principles using ArgoCD enable declarative infrastructure and application deployment, with PythonChi providing Infrastructure as Code capabilities.
 
-GitHub repository for version control
-CI/CD pipeline for testing and deployment
-PythonChi for IaaC
-Docker containerization
-Kubernetes orchestration
-ArgoCD for GitOps
-Staged deployment patterns
+Relation to Lecture Material: This implements the devops concepts from "DevOps" lectures and Labs.
 
-Justification
+I have created the terraform_ansible.ipynb file in the root directory which runs as bash script to Provision infrastructure ,configuration ,resources and runs playbooks and deploys stages 
+#### 1.GitHub repository for version control
+Everything in version control: Terraform manifests, Ansible playbooks, Kubespray code, Argo Workflows, Argo CD manifests, Helm/Kustomize charts, and application source.  
 
-GitOps Approach: Declarative infrastructure ensures consistency between environments and enables rapid rollback if needed.
-Continuous Training: Automating the retraining process based on drift detection ensures model accuracy over time without manual intervention.
-Staged Deployments: Progressive rollout of updates minimizes risk and enables validation before full deployment.
+#### 2.Terraform: Infrastructure-as-Code 
+Declarative provisioning: All network, compute, and security configurations live in version control. Terraform manifests describe private networks, subnets, security groups, three Ubuntu instances, and a publicly routable floating IP.
+Automated configuration: After infrastructure appears, Ansible playbooks declare every package, service, and Kubernetes component. Hosts are never updated by hand; changes flow from Git to the cluster.Infrastructure Provisioning: <15 minutes from commit to complete environment setup
 
-Relation to Lecture Material
-This implements DevOps and MLOps concepts from lectures:
+#### 3. Cloud-Native Practices
+Immutable infrastructure: Once VMs are provisioned, configuration drift is prevented. Updates require adjustments to code, not in-place edits.
+Microservices architecture: The model-serving API, CI/CD controllers (Argo CD, Argo Workflows), and cluster services each run as isolated containers or small pods, communicating over well-defined APIs.
+Containers as compute units: All application logic and tooling—even training steps—live in Docker images, enabling consistent environments across development, staging, and production.
 
-CI/CD pipeline design
-Infrastructure as Code principles
-Container orchestration patterns
-GitOps deployment methodology
-Continuous training workflows
+#### 4. CI/CD 
+The bash file in node1 clones the git repository on node1,builds the docker image  and runs the docker container.
+GitOps-style deployments:Workflow outputs (new image tags) update manifest files in Git; Argo CD observes these changes and synchronizes them into the cluster.
+The scripts for trigger worflows, staging, canary and production are added.
 
-Specific Numbers
 
-Test Coverage: Minimum 85% code coverage for all components
-Deployment Frequency: Support for multiple deployments per day if needed
-Rollback Time: <5 minutes for reverting to previous stable version
-Infrastructure Provisioning: <15 minutes from commit to complete environment setup
-Deployment Stages: Development → Testing → Staging → Production with automated promotion
-Model Validation: Automated evaluation against benchmark dataset (95% accuracy threshold) before promotion
+
+
 
 
 

@@ -47,6 +47,8 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 
 ### Detailed design plan
 Detailed Design Plan for Intelligent Multimedia Processing (IMP) System
+![mlops 2nd](https://github.com/user-attachments/assets/c73aa631-9e6c-4be6-a19a-0ec475899586)
+
 Model Training and Training Platforms
 ## Unit 1
 ## Scale
@@ -264,30 +266,126 @@ Canary Deployment: 10% traffic to new model versions for validation
 
 
 #### Data pipeline
-Strategy
-Our data pipeline focuses on efficient processing of multimedia inputs, with separate paths for documents, audio, and video. We'll implement both batch processing for historical data and streaming capabilities for real-time meeting analysis. A comprehensive data dashboard will provide insights into data quality and processing efficiency.
-Relevant Parts of the Architecture
+#### 1. Persistent Storage
 
-Document, audio, and video processing pipelines
-VOSK for speech-to-text conversion
-Chunking module for text segmentation
-Metadata extraction and storage
-Chameleon persistent storage
-Interactive data dashboard
+1. *Block-storage volume (KVM)*  
+   - A dedicated Chameleon block volume is attached at /mnt/block on your VM.  
+   - All containers in docker-compose.yml mount it as /data:
+     yaml
+     volumes:
+       - /mnt/block:/data
+     
+   - *Raw* and *processed* files persist across container restarts.
 
-Justification
+2. *Object-storage container (CHI-TACC Swift)*  
+   - A Swift container named object-persist-project39 holds final artifacts.  
+   - Rclone is configured in ~/.config/rclone/rclone.conf under the [chi_tacc] profile.  
+   - load-data.sh pushes /data/processed/*.jsonl into swift:object-persist-project39/processed.
+#### 2. Offline Data Pipeline
 
-Specialized Processing Paths: Different media types require specialized processing techniques. Our pipeline handles each appropriately while converging to a common text representation.
-Persistent Storage Strategy: Enterprise data requires secure, persistent storage with proper versioning and access controls.
-Streaming Processing: Real-time meeting analysis requires low-latency processing of audio streams, necessitating an optimized streaming pipeline.
+All offline (training) data lives under the same block volume and is moved to object storage when ready.  
 
-Relation to Lecture Material
-This implements the data engineering concepts from lectures:
+1. **Extract (extract-data.sh)**  
+   - Downloads 56 GB of AMI signals via your wget.txt manifest.  
+   - Grabs both manual & automatic NXT annotations:  
+     - ami_public_manual_1.6.2.zip → raw/ami/manual_annotations/…  
+     - ami_public_auto_1.5.1.zip   → raw/ami/automatic_annotations/…  
+   - Unpacks any existing amicorpus.tgz if present.
 
-ETL pipeline design
-Data quality monitoring
-Offline vs. online data processing
-Feature store concepts (for embeddings and metadata)
+2. **Transform (transform-data.sh)**  
+   - Walks *all* raw subfolders (raw/ami, raw/meetingbank), supports:  
+     - .trs, .txt, .json, NXT XML, PDF, DOCX, PNG/JPG (OCR), etc.  
+   - Emits clean JSON-lines per category:
+     - manual.jsonl  
+     - automatic.jsonl  
+     - transcripts.jsonl  
+   - Collates metadata (meetingID, file path, etc.) for each record.
+
+3. **Load (load-data.sh)**  
+   - Verifies local /data/processed contents & sizes.  
+   - Uses rclone copy --checksum --progress to push to:  
+     
+     swift:object-persist-project39/processed
+     
+   - Lists remote contents before & after to confirm success.
+
+#### 3. **Data pipelines**
+
+1. **Data Source**
+   - **ICSI Meeting Signals**  
+  - Audio `.wav` files for meeting IDs  
+    - Downloaded via `etl/extract/icsi.sh` from  
+      `https://groups.inf.ed.ac.uk/ami/ICSIsignals/NXT/<MID>.interaction.wav`  
+  - Manifest & license text from  
+    `https://groups.inf.ed.ac.uk/ami/download/temp/icsiBuild-15735-Sun-May-11-2025.manifest.txt`  
+    and `CCBY4.0.txt`
+
+- **Custom Video Inputs** (replacing OpenSLR)  
+  - Two MP4 files hosted on Google Drive  
+    - IDs `1bbmmYdlnkYwrkoULIa-IEhb6g80i4HwW` and `1Sc2OemI3c7blKMFAQnGnbSTgAE7IZz-6`  
+  - Downloaded via `gdown` in `extract-video` service
+ 
+2. **Offline ETL Pipeline**
+   -All steps run **in Docker**; code lives under `etl/`.
+
+```bash
+cd etl
+docker compose run --rm extract-icsi      # 👉 Raw ICSI .wav + metadata onto /mnt/block/raw/icsi
+docker compose run --rm extract-video     # 👉 Raw videos onto /mnt/block/raw/video
+docker compose run --rm convert-video     # 👉 ffmpeg: MP4 → 16 kHz mono WAV
+docker compose build whisper-builder      # 👉 Build Whisper image (caches weights)
+docker compose run --rm transcribe-icsi   # 👉 Whisper transcribes ICSI → transcripts_icsi.jsonl
+docker compose run --rm transcribe-video  # 👉 Whisper transcribes video audio → transcripts_video.jsonl
+docker compose run --rm build-chunks      # 👉 chunk_text → train/val/prod JSONL in /mnt/block/processed
+docker compose run --rm embed-index       # 👉 Sentence-Transformer embed + FAISS index → /mnt/block/faiss_base
+docker compose run --rm push-object       # 👉 rclone pushes faiss_base → Swift `object-persist-project39/faiss_base`
+
+---
+3. **Online (Streaming) Pipeline** 
+Simulates production inference traffic:
+
+cd streaming
+docker compose up -d simulator
+simulate_requests.py reads prod_seed_chunks.jsonl
+
+Sends each chunk as a POST to your RAG API (RAG_ENDPOINT_URL) at configurable rate
+Logs {"timestamp", "latency", "status"} to /mnt/block/metrics/stream_metrics.jsonl
+
+Characteristics of simulated data
+
+Rate: 0.2 requests/sec (adjustable via --rate)
+
+Distribution: exact meeting-IDs held out for “prod_seed” in splits.yaml
+
+Realism: uses actual chunks derived from raw transcripts
+
+4 | Interactive Dashboard
+Implemented in Streamlit, two tabs:
+
+bash
+Copy
+Edit
+cd rag_app
+streamlit run app.py  # reads RAG_ENDPOINT_URL from .env
+Chat: query RAG inference API, view Q/A history
+
+Dashboard: reads /mnt/block/metrics/*.jsonl, displays:
+
+Latency-over-time line chart
+
+Success rate metric
+
+
+### Usage
+
+1. Provision storage (if you include provision/ scripts).  
+2. Clone & cd into this directory.
+3. Ensure your Swift credentials are in ~/.config/rclone/rclone.conf.  
+4. Run:
+   ```bash
+   docker compose up --rm extract-data
+   docker compose up --rm transform-data
+   docker compose up --rm load-data
 
 Specific Numbers
 

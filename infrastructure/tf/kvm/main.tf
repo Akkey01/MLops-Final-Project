@@ -67,3 +67,15 @@ resource "openstack_networking_floatingip_v2" "floating_ip" {
   port_id     = openstack_networking_port_v2.sharednet2_ports["node1"].id
 }
 
+resource "openstack_objectstorage_container_v1" "project_container" {
+  name = "object-persist-project-39"
+}
+
+resource "openstack_objectstorage_object_v1" "project_index_file" {
+  container_name = openstack_objectstorage_container_v1.project_container.name
+  name           = "index.html"
+  content_type   = "text/html"
+  content        = "<html><body><h1>Welcome to MLOps Object Store - Project 39</h1></body></html>"
+  depends_on     = [openstack_objectstorage_container_v1.project_container]
+}
+

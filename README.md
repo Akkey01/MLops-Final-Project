@@ -27,11 +27,10 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 |--------------|----------------------|------------------------------------------------|
 | Data set 1   |os- AMI Meeting Corpus|https://groups.inf.ed.ac.uk/ami/download/       |
 | Data set 2   |os-ICSI Meeting Corpus|https://groups.inf.ed.ac.uk/ami/icsi/download/  |
-| Data set 3   | SLIDESPEECH          |https://www.openslr.org/144/                    |
 
 | MODELS       | Name of Model used   |
 |--------------|----------------------|
-| Base model 1 | Llama 7b             |                                                |
+| Base model 1 | Flan-T5-Large        |                                                
 | Base model 2 | Whisper              |
 | Base model 3 | Sentence-Transformer |
 
@@ -41,10 +40,10 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 
 | Requirement     | How many/when                                     | Justification       |
 |-----------------|---------------------------------------------------|---------------------|
-| `m1.medium` VMs | 3 for entire project duration                     |                     |
-| `gpu_mi100`     | 4 hour block twice a week                         |                     |
-| Floating IPs    | 1 for entire project duration, 1 for sporadic use |                     |
-| etc             |                                                   |                     |
+| `m1.xlarge` VMs | 3 for entire project duration                     | Docker Image of the entire system was 20GB|
+| `gpu_a100`      | 4 hour block twice a week                         |                                           |
+| Floating IPs    | 2 for entire project duration, 1 for sporadic use |                                           |
+| etc             |                                                   |                                           |
 
 ### Detailed design plan
 Detailed Design Plan for Intelligent Multimedia Processing (IMP) System
@@ -62,9 +61,9 @@ Model Training and Training Platforms
 
 | **Model**                | **Parameters**             | **Approx. Model Size**                      | **Inference Latency**                                                      |
 |--------------------------|----------------------------|---------------------------------------------|----------------------------------------------------------------------------|
-| **Llama 3B**             | 3 Billion                  | ~12-15GB (FP32; can be reduced via quantization)| ~0.5-1 second for typical query generation on a high-end GPU                |
+| **Flan-T5-Large**        | 783 M                      | ~1.02GB                                     | ~0.5-1 second for typical query generation on a high-end GPU                |
 | **Whisper**              | (Not typically measured)   | Lightweight (generally <1GB)                | Real-time or near real-time transcription (processing speed close to audio duration) |
-| **longformer-base-4096** | ~149 Million               | ~600MB to 1GB                                | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
+| **longformer-base-4096** | ~149 Million               | ~600MB to 1GB                               | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
 
 
 #### Deployment
@@ -200,7 +199,7 @@ Relevant Parts of the Architecture
 MLFlow for experiment tracking and model versioning
 Ray clusters for distributed training
 Longformer-base-4096, pretrained on long documents
-Llama 7B with LORA optimizations
+Flan-T5-Large with LORA optimizations
 Model Registry for version control and deployment
 
 Justification
@@ -234,11 +233,11 @@ We'll implement a multi-tier serving strategy with optimizations for both latenc
 Relevant Parts of the Architecture
 
 FastAPI service layer
-TorchServe for model deployment
 Quantized models for CPU inference
-GPU acceleration for batch processing
-MLFlow dashboards for monitoring
-Interactive data dashboard for visualization
+GPU acceleration for Faster inferencing
+Prometheus dashboards for metrics
+Interactive Grafana dashboard for visualization
+Airflow for testing suites
 
 Justification
 
@@ -249,7 +248,7 @@ Comprehensive Monitoring: Early detection of model drift is crucial for maintain
 Relation to Lecture Material
 This implements the serving concepts from "Model Serving" lectures:
 
-Model optimization techniques (quantization, operator fusion)
+Model optimization techniques (ONNX)
 Batch vs. real-time inference patterns
 Zero-downtime deployment strategies
 A/B testing for model deployments

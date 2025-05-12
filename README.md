@@ -192,7 +192,13 @@ The system is composed of multiple machine learning models that work together—
   - Summarized meeting minutes.
 
 
+### Model training and training platforms\
+
+
 ### Model training and training platforms
+The model was trained using LoRA. The model flan-t5-large was selected due to it's suitability for summarization. We experimented with different values of batch size and observed that a small batch size of 2 performs the best. We also observed that the best performance is with a learning rate of 1e-4 and 5 epochs.
+
+We utilized MLFlow and Ray for logging experiments and understanding the impact of different hyperparameters, and feeding training jobs,
 ## Strategy
 
 Our training strategy employs distributed training techniques for the Sentence Transformer embeddings model and fine-tuning of Flan-T5-Large using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.

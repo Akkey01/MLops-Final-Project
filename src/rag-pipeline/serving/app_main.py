@@ -10,8 +10,8 @@ app = FastAPI(
     description="Wraps Whisper (optional) and your RAG model endpoint",
 )
 
-WHISPER_URL = os.getenv("WHISPER_ENDPOINT_URL")    # leave blank for dummy stubs
-RAG_URL     = os.getenv("RAG_ENDPOINT_URL")        # e.g. http://129.114.27.22:8000/predict
+
+RAG_URL     = os.getenv("RAG_ENDPOINT_URL")        
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):

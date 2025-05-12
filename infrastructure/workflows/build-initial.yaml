@@ -1,78 +1,10 @@
-# apiVersion: argoproj.io/v1alpha1
-# kind: Workflow
-# metadata:
-#   generateName: kaniko-pvc-build-
-# spec:
-#   entrypoint: kaniko-build-flow
-
-#   volumeClaimTemplates:
-#   - metadata:
-#       name: workdir
-#     spec:
-#       accessModes: [ "ReadWriteOnce" ]
-#       resources:
-#         requests:
-#           storage: 1Gi
-
-#   templates:
-#   - name: kaniko-build-flow
-#     steps:
-#       - - name: clone-repo
-#           template: git-clone
-#       - - name: kaniko-build
-#           template: kaniko
-
-#   - name: git-clone
-#     container:
-#       image: alpine/git
-#       command: [sh, -c]
-#       args:
-#         - |
-#           MAX_RETRIES=5
-#           i=1
-
-#           while [ $i -le $MAX_RETRIES ]; do
-#             echo "Attempt $i of $MAX_RETRIES: Cloning repo..."
-#             git clone --branch main https://github.com/Akkey01/MLops-Final-Project.git /mnt/workspace && break
-#             echo "Git clone failed. Retrying in 5 seconds..."
-#             i=$((i + 1))
-#             sleep 5
-#           done
-
-#           if [ ! -d /mnt/workspace/.git ]; then
-#             echo "Git clone failed after $MAX_RETRIES attempts."
-#             exit 1
-#           fi
-
-#           echo "Repo successfully cloned. Listing contents:"
-#           ls -R /mnt/workspace
-#       volumeMounts:
-#         - name: workdir
-#           mountPath: /mnt/workspace
-
-#   - name: kaniko
-#     container:
-#       image: gcr.io/kaniko-project/executor:latest
-#       command: ["/kaniko/executor"]
-#       args:
-#         - --dockerfile=/mnt/workspace/src/Dockerfile
-#         - --context=/mnt/workspace/src
-#         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
-#         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
-#         - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0
-#         - --insecure
-#         - --skip-tls-verify
-#         - --verbosity=debug
-#       volumeMounts:
-#         - name: workdir
-#           mountPath: /mnt/workspace
-
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: kaniko-pvc-build-
 spec:
   entrypoint: kaniko-build-flow
+
   volumeClaimTemplates:
   - metadata:
       name: workdir
@@ -81,15 +13,15 @@ spec:
       resources:
         requests:
           storage: 1Gi
+
   templates:
   - name: kaniko-build-flow
     steps:
       - - name: clone-repo
           template: git-clone
-      - - name: create-dockerfile
-          template: create-dockerfile
       - - name: kaniko-build
           template: kaniko
+
   - name: git-clone
     container:
       image: alpine/git
@@ -98,6 +30,7 @@ spec:
         - |
           MAX_RETRIES=5
           i=1
+
           while [ $i -le $MAX_RETRIES ]; do
             echo "Attempt $i of $MAX_RETRIES: Cloning repo..."
             git clone --branch main https://github.com/Akkey01/MLops-Final-Project.git /mnt/workspace && break
@@ -105,45 +38,18 @@ spec:
             i=$((i + 1))
             sleep 5
           done
+
           if [ ! -d /mnt/workspace/.git ]; then
             echo "Git clone failed after $MAX_RETRIES attempts."
             exit 1
           fi
+
           echo "Repo successfully cloned. Listing contents:"
-          find /mnt/workspace -type f | sort
+          ls -R /mnt/workspace
       volumeMounts:
         - name: workdir
           mountPath: /mnt/workspace
-  - name: create-dockerfile
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args:
-        - |
-          # Create a Dockerfile in the src directory
-          mkdir -p /mnt/workspace/src
-          cat > /mnt/workspace/src/Dockerfile << 'EOL'
-FROM python:3.9-slim
 
-WORKDIR /app
-
-# Copy the entire source code
-COPY . /app/
-
-# Install dependencies if requirements.txt exists
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Run the application
-CMD ["python", "app_main.py"]
-EOL
-          echo "Created Dockerfile at /mnt/workspace/src/Dockerfile:"
-          cat /mnt/workspace/src/Dockerfile
-      volumeMounts:
-        - name: workdir
-          mountPath: /mnt/workspace
   - name: kaniko
     container:
       image: gcr.io/kaniko-project/executor:latest
@@ -151,10 +57,13 @@ EOL
       args:
         - --dockerfile=/mnt/workspace/src/Dockerfile
         - --context=/mnt/workspace/src
-        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:latest
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:staging-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:canary-1.0.0
+        - --destination=registry.kube-system.svc.cluster.local:5000/imps-app:production-1.0.0
         - --insecure
         - --skip-tls-verify
         - --verbosity=debug
       volumeMounts:
         - name: workdir
           mountPath: /mnt/workspace
+

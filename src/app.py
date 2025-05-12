@@ -80,3 +80,7 @@ def generate_text(prompt: Prompt):
 @app.get("/metrics")
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+@app.get("/version")
+def get_model_version():
+    return {"model_version": MODEL_VERSION}

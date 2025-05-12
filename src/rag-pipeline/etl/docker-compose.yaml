@@ -57,10 +57,12 @@ services:
 
   ## ─── 4. TRANSCRIBE ICSI AUDIO ────────────────────────────────────
   transcribe-icsi:
-    image: python:3.11
+    buils:
+      context: ./transform
+      dockerfile: Dockerfile.whisper
     user: root
     volumes:
-      - /mnt-block:/data
+      - whisper-cache:/root/.cache/whisper   # persists downloaded models
     working_dir: /app/etl/transform
     env_file:
       - ./.env
@@ -134,3 +136,6 @@ services:
     entrypoint: /bin/sh
     command: >
       -c "rclone copy /data/faiss_base $RCLONE_REMOTE:$RCLONE_CONTAINER/faiss_base --progress"
+
+  volumes:
+    whisper-cache:

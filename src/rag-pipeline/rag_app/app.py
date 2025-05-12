@@ -22,7 +22,7 @@ page = st.sidebar.radio("Go to", ["Chat", "Dashboard"])
 
 # ── Chat page ───────────────────────────────────────────────────────
 if page == "Chat":
-    st.title("💬 RAG Chat")
+    st.title("💬 IMPS.AI")
     if "history" not in st.session_state:
         st.session_state.history = []
 

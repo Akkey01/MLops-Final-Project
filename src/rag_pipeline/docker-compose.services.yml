@@ -1,0 +1,10 @@
+# docker-compose.services.yml
+version: "3.9"
+
+volumes:
+  blockdata:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/block
+      o: bind

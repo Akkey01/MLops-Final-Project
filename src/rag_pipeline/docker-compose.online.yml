@@ -1,0 +1,38 @@
+# docker-compose.online.yml
+version: "3.9"
+
+services:
+
+  simulator:
+    image: python:3.11
+    env_file: .env
+    volumes:
+      - blockdata:/mnt/block:ro
+      - ./streaming:/code:ro
+    working_dir: /code
+    command: ["python", "stream_simulator.py", "--rate", "100/day"]
+
+  rag-ui:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    env_file: .env
+    volumes:
+      - blockdata:/mnt/block:ro
+    ports:
+      - "8501:8501"
+
+  dashboard:
+    image: python:3.11-slim
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - ./app/dashboard.py:/app/dashboard.py:ro
+      - blockdata:/mnt/block:ro
+    command: >
+      sh -c "pip install streamlit pandas &&
+             streamlit run dashboard.py
+               --server.port=8601
+               --server.address=0.0.0.0"
+    ports:
+      - "8601:8601"

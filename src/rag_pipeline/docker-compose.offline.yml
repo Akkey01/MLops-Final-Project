@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+
+  blockdata:
+    image: alpine:latest          # dummy service to define the volume
+    volumes:
+      - blockdata:/data
+
+  extract-icsi:
+    image: python:3.11
+    volumes: [ "blockdata:/data" ]
+    working_dir: /data/raw
+    command: [ "bash", "/etl/01_extract_icsi.sh" ]
+
+  transcribe:
+    image: ghcr.io/ggerganov/whisper.cpp:latest
+    volumes: [ "blockdata:/data" ]
+    working_dir: /data/raw
+    entrypoint: [ "bash", "/etl/02_transcribe_whisper.sh" ]
+
+  build-faiss:
+    image: python:3.11
+    volumes: [ "blockdata:/data" ]
+    working_dir: /data
+    command: [ "python", "/etl/03_build_faiss.py" ]
+
+  push-to-object:
+    image: rclone/rclone:latest
+    env_file: .env
+    volumes:
+      - blockdata:/data
+    command: >
+      sh -c 'rclone copy /mnt/block/faiss_base
+             $${RCLONE_REMOTE}:$${RCLONE_CONTAINER}/faiss_base --progress'
+
+volumes:
+  blockdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/block

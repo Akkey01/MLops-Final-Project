@@ -18,70 +18,59 @@ test_dataset = datasets.ImageFolder(root=os.path.join(food_11_data_dir, 'evaluat
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
 
-def benchmark_session(ort_session):
+def benchmark_session(onnx_model_path, tokenizer_path, prompt_text="Once upon a time", batch_size=8):
+    # Load ONNX model and tokenizer
+    ort_session = ort.InferenceSession(onnx_model_path)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
 
+    model_size = os.path.getsize(onnx_model_path)
     print(f"Execution provider: {ort_session.get_providers()}")
+    print(f"Model Size: {model_size / 1e6:.2f} MB")
 
-    ## Benchmark accuracy
-    # Custom logic to test the accuracy for our model
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
-        images_np = images.numpy()
-        outputs = ort_session.run(None, {ort_session.get_inputs()[0].name: images_np})[0]
-        predicted = np.argmax(outputs, axis=1)
-        total += labels.size(0)
-        correct += (predicted == labels.numpy()).sum()
-    accuracy = (correct / total) * 100
+    # Prepare single sample
+    inputs = tokenizer(prompt_text, return_tensors="np", padding="longest")
+    seq_len = inputs["input_ids"].shape[1]
+    input_feed = {
+        "input_ids": inputs["input_ids"],
+        "attention_mask": inputs["attention_mask"],
+        "position_ids": np.arange(seq_len)[None, :].astype("int64")  # shape (1, seq_len)
+    }
 
-    print(f"Accuracy: {accuracy:.2f}% ({correct}/{total} correct)")
-
-    ## Benchmark inference latency for single sample
-
-    num_trials = 100  # Number of trials
-
-    # Get a single sample from the test data
-
-    single_sample, _ = next(iter(test_loader))  
-    single_sample = single_sample[:1].numpy()
-
-    # Warm-up run
-    ort_session.run(None, {ort_session.get_inputs()[0].name: single_sample})
-
+    # Latency benchmark
     latencies = []
-    for _ in range(num_trials):
-        start_time = time.time()
-        ort_session.run(None, {ort_session.get_inputs()[0].name: single_sample})
-        latencies.append(time.time() - start_time)
+    for _ in range(100):
+        start = time.time()
+        ort_session.run(None, input_feed)
+        latencies.append(time.time() - start)
 
-    print(f"Inference Latency (single sample, median): {np.percentile(latencies, 50) * 1000:.2f} ms")
-    print(f"Inference Latency (single sample, 95th percentile): {np.percentile(latencies, 95) * 1000:.2f} ms")
-    print(f"Inference Latency (single sample, 99th percentile): {np.percentile(latencies, 99) * 1000:.2f} ms")
-    print(f"Inference Throughput (single sample): {num_trials/np.sum(latencies):.2f} FPS")
+    print(f"Latency (P50): {np.percentile(latencies, 50)*1000:.2f} ms")
+    print(f"Latency (P95): {np.percentile(latencies, 95)*1000:.2f} ms")
+    print(f"Latency (P99): {np.percentile(latencies, 99)*1000:.2f} ms")
+    print(f"Throughput (prompts/sec): {100/np.sum(latencies):.2f}")
 
-    ## Benchmark batch throughput
+    # Prepare batch input
+    batch_prompts = [prompt_text] * batch_size
+    batch_inputs = tokenizer(batch_prompts, return_tensors="np", padding="longest")
+    seq_len = batch_inputs["input_ids"].shape[1]
+    batch_input_feed = {
+        "input_ids": batch_inputs["input_ids"],
+        "attention_mask": batch_inputs["attention_mask"],
+        "position_ids": np.tile(np.arange(seq_len), (batch_size, 1)).astype("int64")
+    }
 
-    num_batches = 50  # Number of trials
-
-    # Get a batch from the test data
-    batch_input, _ = next(iter(test_loader))  
-    batch_input = batch_input.numpy()
-
-    # Warm-up run
-    ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
-
+    # Batch throughput
     batch_times = []
-    for _ in range(num_batches):
-        start_time = time.time()
-        ort_session.run(None, {ort_session.get_inputs()[0].name: batch_input})
-        batch_times.append(time.time() - start_time)
+    for _ in range(50):
+        start = time.time()
+        ort_session.run(None, batch_input_feed)
+        batch_times.append(time.time() - start)
 
-    batch_fps = (batch_input.shape[0] * num_batches) / np.sum(batch_times) 
-    print(f"Batch Throughput: {batch_fps:.2f} FPS")
+    tokens = batch_inputs["input_ids"].shape[0] * batch_inputs["input_ids"].shape[1] * len(batch_times)
+    print(f"Token throughput: {tokens / sum(batch_times):.2f} tokens/sec")
 
 #CUDA execution provider
 def getInferenceOnGPU():
-    onnx_model_path = "./models/IMP.onnx"
+    "./tinyllama11b_chat_ft1/onnx/model.onnx",
     ort_session = ort.InferenceSession(onnx_model_path, providers=['CUDAExecutionProvider'])
     benchmark_session(ort_session)
     ort.get_device()

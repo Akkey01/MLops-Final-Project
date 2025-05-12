@@ -32,7 +32,7 @@ services:
       context: ../
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8050:8000"
     environment:
       - MODEL_VERSION=stable
 
@@ -41,7 +41,7 @@ services:
       context: ../
       dockerfile: Dockerfile
     ports:
-      - "8001:8000"
+      - "8051:8000"
     environment:
       - MODEL_VERSION=canary
 

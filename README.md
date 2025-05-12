@@ -65,7 +65,7 @@ Model Training and Training Platforms
 |--------------------------|----------------------------|---------------------------------------------|----------------------------------------------------------------------------|
 | **Flan-T5-Large**        | 783 M                      | ~1.02GB                                     | ~0.5-1 second for typical query generation on a high-end GPU                |
 | **Whisper**              | (Not typically measured)   | Lightweight (generally <1GB)                | Real-time or near real-time transcription (processing speed close to audio duration) |
-| **longformer-base-4096** | ~149 Million               | ~600MB to 1GB                               | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
+| **Sentence Transformer** | ~149 Million               | ~600MB to 1GB                               | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
 
 
 #### Deployment
@@ -179,15 +179,15 @@ The system is composed of multiple machine learning models that work together—
 
 | **Model**                 | **Role in the Pipeline**                                                                                                                                       | **Why It’s Necessary**                                                                                                                                                                                   |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Base Model 1: LLaMA 7B**| Used as a language model for generating responses and meeting minutes from retrieved contextual segments.                                                       | LLaMA is powerful for generation and reasoning based on context. It's essential for producing fluent, coherent text.                                                                                      |
+| **Base Model 1: Flan-T5-Large**| Used as a language model for generating responses and meeting minutes from retrieved contextual segments.                                                       | Flan-T5-Large is powerful for generation and reasoning based on context. It's essential for producing fluent, coherent text.                                                                                      |
 | **Base Model 2: WHISPER**     | Performs speech-to-text transcription from audio input. This is the first model in the pipeline when the input is raw meeting audio.                              | Without this, the system cannot convert spoken language into usable text for downstream processing.                                                                                                       |
-| **Base Model 3: Longformer**| Used to create text embeddings for long-form documents or transcripts, enabling semantic search over meeting content in the vector database (RAG engine).        | Enables contextual retrieval of relevant segments for LLaMA to reason over. Long context handling is essential.                                                                                            |
+| **Base Model 3: Sentence Transformer**| Used to create text embeddings for long-form documents or transcripts, enabling semantic search over meeting content in the vector database (RAG engine).        | Enables contextual retrieval of relevant segments for Flan-T5-Large to reason over. Long context handling is essential.                                                                                            |
 
 ### Why All Three Models Are Required Together
 
 - **WHISPER** converts audio files into readable, timestamped text.
-- **Longformer** embeds the resulting (long) transcripts for semantic indexing in a vector database.
-- **LLaMA 7B** is used in the RAG (Retrieval-Augmented Generation) loop, receiving the most relevant transcript segments and generating:
+- **Sentence Transformer** embeds the resulting (long) transcripts for semantic indexing in a vector database.
+- **Flan-T5-Large** is used in the RAG (Retrieval-Augmented Generation) loop, receiving the most relevant transcript segments and generating:
   - Natural language responses to queries.
   - Summarized meeting minutes.
 
@@ -195,20 +195,20 @@ The system is composed of multiple machine learning models that work together—
 ### Model training and training platforms
 ## Strategy
 
-Our training strategy employs distributed training techniques for the Longformer-base-4096 embeddings model and fine-tuning of Llama 7B using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.
+Our training strategy employs distributed training techniques for the Sentence Transformer embeddings model and fine-tuning of Flan-T5-Large using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.
 Relevant Parts of the Architecture
 
 MLFlow for experiment tracking and model versioning
 Ray clusters for distributed training
-Longformer-base-4096, pretrained on long documents
+Sentence Transformer, pretrained on long documents
 Flan-T5-Large with LORA optimizations
 Model Registry for version control and deployment
 
 Justification
 
 Distributed Training: The ICSI Meeting Recorder Corpus (39GB) contains substantial audio data requiring efficient parallelized processing. Ray's distributed training framework enables us to scale across multiple nodes on Chameleon infrastructure.
-Model Selection: Longformer-base-4096 (560MB) is specifically designed for long context (up to 4,096 tokens), making it ideal for meeting transcripts and lengthy documents while remaining small enough (560MB) for efficient deployment.
-Parameter-Efficient Fine-tuning: LORA reduces the number of trainable parameters for Llama 7B by approximately 95%, enabling fine-tuning on limited resources while maintaining performance.
+Model Selection: Sentence Transformer (560MB) is specifically designed for long context (up to 4,096 tokens), making it ideal for meeting transcripts and lengthy documents while remaining small enough (560MB) for efficient deployment.
+Parameter-Efficient Fine-tuning: LORA reduces the number of trainable parameters for Flan-T5-Large by approximately 95%, enabling fine-tuning on limited resources while maintaining performance.
 
 Relation to Lecture Material
 This approach implements the distributed training patterns discussed in the "Training at Scale" lectures, specifically:
@@ -243,7 +243,7 @@ Airflow for testing suites
 
 Justification
 
-Inference Optimization: Quantization reduces the Longformer model size by 75% (from 560MB to ~140MB) while maintaining 97%+ of accuracy, enabling faster CPU inference for low-latency requirements.
+Inference Optimization: Quantization reduces the Sentence Transformer model size by 75% (from 560MB to ~140MB) while maintaining 97%+ of accuracy, enabling faster CPU inference for low-latency requirements.
 Multiple Serving Options: Different query patterns (interactive vs. batch processing) require different optimization strategies. Our architecture supports both GPU-accelerated batch processing and optimized CPU inference.
 Comprehensive Monitoring: Early detection of model drift is crucial for maintaining accuracy in enterprise environments where data patterns evolve.
 
@@ -328,7 +328,7 @@ All offline (training) data lives under the same block volume and is moved to ob
 2. **Offline ETL Pipeline**
    -All steps run **in Docker**; code lives under `etl/`.
 
-```bash
+
 cd etl
 docker compose run --rm extract-icsi      # 👉 Raw ICSI .wav + metadata onto /mnt/block/raw/icsi
 docker compose run --rm extract-video     # 👉 Raw videos onto /mnt/block/raw/video
@@ -341,7 +341,7 @@ docker compose run --rm embed-index       # 👉 Sentence-Transformer embed + FA
 docker compose run --rm push-object       # 👉 rclone pushes faiss_base → Swift `object-persist-project39/faiss_base`
 
 ---
-3. **Online (Streaming) Pipeline** 
+3. **Data Pipeline and Online data** 
 Simulates production inference traffic:
 
 cd streaming
@@ -359,12 +359,10 @@ Distribution: exact meeting-IDs held out for “prod_seed” in splits.yaml
 
 Realism: uses actual chunks derived from raw transcripts
 
-4 | Interactive Dashboard
+4. **Interactive Dashboard**
 Implemented in Streamlit, two tabs:
 
-bash
-Copy
-Edit
+
 cd rag_app
 streamlit run app.py  # reads RAG_ENDPOINT_URL from .env
 Chat: query RAG inference API, view Q/A history
@@ -373,16 +371,13 @@ Dashboard: reads /mnt/block/metrics/*.jsonl, displays:
 
 Latency-over-time line chart
 
-Success rate metric
-
-
 ### Usage
 
 1. Provision storage (if you include provision/ scripts).  
 2. Clone & cd into this directory.
 3. Ensure your Swift credentials are in ~/.config/rclone/rclone.conf.  
 4. Run:
-   ```bash
+   
    docker compose up --rm extract-data
    docker compose up --rm transform-data
    docker compose up --rm load-data

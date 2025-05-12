@@ -17,7 +17,7 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 
 
 ### System diagram
-![Editor _ Mermaid Chart-2025-04-03-012909](https://github.com/user-attachments/assets/2837f94c-4875-4c08-abb5-9f566b161687)
+![Editor _ Mermaid Chart-2025-05-12-004857](https://github.com/user-attachments/assets/33c9cf1c-2de2-4d4a-95c0-8f38e863d673)
 
 
 ### Summary of outside materials

@@ -1,0 +1,46 @@
+
+version: "3.8"
+
+name: triton_test
+
+services:
+  triton_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.triton
+    container_name: triton_server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8000:8000"  # HTTP
+      - "8001:8001"  # GRPC
+      - "8002:8002"  # Metrics
+    volumes:
+      - ./models:/models
+
+  jupyter:
+    image: quay.io/jupyter/minimal-notebook:latest
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./workspace:/home/jovyan/work
+    command: >
+      bash -c "python3 -m pip install bash_kernel tritonclient[all] &&
+               python3 -m bash_kernel.install &&
+               start-notebook.sh"
+
+  model_export:
+    build:
+      context: .
+      dockerfile: Dockerfile.export
+    container_name: model_export
+    volumes:
+      - ./models:/app/models
+    command: >
+      sh -c "cd backend && python export_to_onnx.py && python benchmark_onnx.py"

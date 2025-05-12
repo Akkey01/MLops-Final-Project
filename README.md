@@ -7,61 +7,65 @@ Enterprises currently rely on manual searching through documents, audio, and vid
 ### Contributors
 
 
-| Name                            | Responsible for                          | Link to their commits in this repo                                                |
-|---------------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
-| All team members                |                                          |                                                                                   |
-| Akshat Mishra                   | data pipeline                            | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Akkey01       |
+| Name ( All team members)        | Responsible for                          | Link to their commits in this repo                                                   |
+|---------------------------------|------------------------------------------|--------------------------------------------------------------------------------------|
+| Akshat Mishra                   | data pipeline                            | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Akkey01          |
 | Siddhant Mohan                  | model training                           | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=siddhantmohan1110|
-| Mihir Khare                     | model serving & monitoring               | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Mihir-Khare429|
-| Nikita Gupta                    | continuous X pipeline                    | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=nairanikita   |
+| Mihir Khare                     | model serving & monitoring               | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=Mihir-Khare429   |
+| Nikita Gupta                    | continuous X pipeline                    | https://github.com/Akkey01/MLops-Final-Project/commits/main/?author=nairanikita      |
 
 
 
 ### System diagram
-![Editor _ Mermaid Chart-2025-04-03-012909](https://github.com/user-attachments/assets/2837f94c-4875-4c08-abb5-9f566b161687)
+![Editor _ Mermaid Chart-2025-05-12-004857](https://github.com/user-attachments/assets/33c9cf1c-2de2-4d4a-95c0-8f38e863d673)
 
 
 ### Summary of outside materials
 
 
-|              | Name                 | 
+| DATESET      | Name                 |  Link to the DATASET                           |
+|--------------|----------------------|------------------------------------------------|
+| Data set 1   |os- AMI Meeting Corpus|https://groups.inf.ed.ac.uk/ami/download/       |
+| Data set 2   |os-ICSI Meeting Corpus|https://groups.inf.ed.ac.uk/ami/icsi/download/  |
+
+| MODELS       | Name of Model used   |
 |--------------|----------------------|
-| Data set 1   |os- AMI Meeting Corpus|
-| Data set 2   |os-ICSI Meeting Corpus|
-| Base model 1 | Llama 7b             |
-| Base model 2 | VOSK                 |
-| Base model 3 | longformer-base-4096 |
+| Base model 1 | Flan-T5-Large        |                                                
+| Base model 2 | Whisper              |
+| Base model 3 | Sentence-Transformer |
 
 
 ### Summary of infrastructure requirements
 
 
-| Requirement     | How many/when                                     | Justification |
-|-----------------|---------------------------------------------------|---------------|
-| `m1.medium` VMs | 3 for entire project duration                     |               |
-| `gpu_mi100`     | 4 hour block twice a week                         |               |
-| Floating IPs    | 1 for entire project duration, 1 for sporadic use |               |
-| etc             |                                                   |               |
+| Requirement     | How many/when                                     | Justification       |
+|-----------------|---------------------------------------------------|---------------------|
+| `m1.xlarge` VMs | 3 for entire project duration                     | Docker Image of the entire system was 20GB|
+| `gpu_a100`      | 4 hour block twice a week                         |                                           |
+| Floating IPs    | 2 for entire project duration, 1 for sporadic use |                                           |
+| etc             |                                                   |                                           |
 
 ### Detailed design plan
 Detailed Design Plan for Intelligent Multimedia Processing (IMP) System
+![mlops 2nd](https://github.com/user-attachments/assets/c73aa631-9e6c-4be6-a19a-0ec475899586)
+
 Model Training and Training Platforms
 ## Unit 1
 ## Scale
 #### Data
 | **Dataset**                              | **Original Size** |
 |------------------------------------------|-------------------|
-| AMI Meeting Corpus                       | 24 GB             |
-| ICSI Meeting Corpus                      | 39 GB             |
-| NIST Meeting Pilot Corpus Speech         | 32 GB             |
+| AMI Meeting Corpus                       | 56 GB             |
+| ICSI Meeting Corpus                      | 1 GB              |
+| Video on our drive                       | 20 MB             |
 
 #### Model
 
 | **Model**                | **Parameters**             | **Approx. Model Size**                      | **Inference Latency**                                                      |
 |--------------------------|----------------------------|---------------------------------------------|----------------------------------------------------------------------------|
-| **Llama 3B**             | 3 Billion                  | ~12-15GB (FP32; can be reduced via quantization)| ~0.5-1 second for typical query generation on a high-end GPU                |
-| **VOSK**                 | (Not typically measured)   | Lightweight (generally <1GB)                | Real-time or near real-time transcription (processing speed close to audio duration) |
-| **longformer-base-4096** | ~149 Million               | ~600MB to 1GB                                | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
+| **Flan-T5-Large**        | 783 M                      | ~1.02GB                                     | ~0.5-1 second for typical query generation on a high-end GPU                |
+| **Whisper**              | (Not typically measured)   | Lightweight (generally <1GB)                | Real-time or near real-time transcription (processing speed close to audio duration) |
+| **Sentence Transformer** | ~149 Million               | ~600MB to 1GB                               | ~0.5-1 second per forward pass on GPU for sequences up to 4096 tokens        |
 
 
 #### Deployment
@@ -163,21 +167,6 @@ Tracking these metrics will help measure IMP’s effectiveness, adoption, and bu
 | **License**                | Available under a Linguistic Data Consortium (LDC) license. Access typically requires an LDC membership or specific agreement.                                                                                                                                                                             |
 | **Permissible Use Cases**  | Permitted for research and educational purposes under the LDC license. Commercial use may require additional licensing or permissions from ICSI or LDC.                                                                                                                                                  |
 | **Where to Access**        | Through the Linguistic Data Consortium ([LDC Access](https://www.ldc.upenn.edu)), catalog ID: LDC2004S02                                                                                                                                                                                                 |
-#####  NIST Meeting Pilot Corpus Speech
-| **Aspect**            | **Details**  |
-|-------------------------|-------------|
-| **Name of Dataset**      | NIST Meeting Pilot Corpus Speech (LDC2004S09) |
-| **Creator(s)**          | John S. Garofolo, Martial Michel, Vincent M. Stanford, Elham Tabassi, Jonathan G. Fiscus, Christophe D. Laprun, Nicolas Pratz, Jerome Lard (Developed by NIST) |
-| **Date of Creation**    | Recorded (Nov 2001 - Dec 2003), Released (July 12, 2004) |
-| **Purpose of Collection** | To improve automatic meeting speech recognition, speaker verification, and discourse analysis |
-| **Conditions of Collection** | Recorded at NIST Meeting Data Collection Lab with 61 participants, using multiple microphone types |
-| **Academic Documentation** | DOI: [10.35111/800p-fv08](https://doi.org/10.35111/800p-fv08) |
-| **Privacy Concerns**     | Includes identifiable speaker voices, conversations may contain sensitive information |
-| **Fairness/Ethics Concerns** | More native speakers (45) than non-native (16), potential bias in language models |
-| **Preprocessing Notes**  | Audio format: SPHERE (16 kHz, 16-bit PCM, mono), transcripts available separately (LDC2004T13) |
-| **License**             | Requires LDC User Agreement for Non-Members, paid access for non-members |
-| **Permissible Use Cases** | Speech recognition research, NLP, speaker identification, discourse analysis, meeting transcription |
-| **Where to Access**      | [LDC Catalog Entry](https://catalog.ldc.upenn.edu/LDC2004S09) (Subscription/Purchase Required) |
 
 
 
@@ -190,15 +179,15 @@ The system is composed of multiple machine learning models that work together—
 
 | **Model**                 | **Role in the Pipeline**                                                                                                                                       | **Why It’s Necessary**                                                                                                                                                                                   |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Base Model 1: LLaMA 7B**| Used as a language model for generating responses and meeting minutes from retrieved contextual segments.                                                       | LLaMA is powerful for generation and reasoning based on context. It's essential for producing fluent, coherent text.                                                                                      |
-| **Base Model 2: VOSK**     | Performs speech-to-text transcription from audio input. This is the first model in the pipeline when the input is raw meeting audio.                              | Without this, the system cannot convert spoken language into usable text for downstream processing.                                                                                                       |
-| **Base Model 3: Longformer**| Used to create text embeddings for long-form documents or transcripts, enabling semantic search over meeting content in the vector database (RAG engine).        | Enables contextual retrieval of relevant segments for LLaMA to reason over. Long context handling is essential.                                                                                            |
+| **Base Model 1: Flan-T5-Large**| Used as a language model for generating responses and meeting minutes from retrieved contextual segments.                                                       | Flan-T5-Large is powerful for generation and reasoning based on context. It's essential for producing fluent, coherent text.                                                                                      |
+| **Base Model 2: WHISPER**     | Performs speech-to-text transcription from audio input. This is the first model in the pipeline when the input is raw meeting audio.                              | Without this, the system cannot convert spoken language into usable text for downstream processing.                                                                                                       |
+| **Base Model 3: Sentence Transformer**| Used to create text embeddings for long-form documents or transcripts, enabling semantic search over meeting content in the vector database (RAG engine).        | Enables contextual retrieval of relevant segments for Flan-T5-Large to reason over. Long context handling is essential.                                                                                            |
 
 ### Why All Three Models Are Required Together
 
-- **VOSK** converts audio files into readable, timestamped text.
-- **Longformer** embeds the resulting (long) transcripts for semantic indexing in a vector database.
-- **LLaMA 7B** is used in the RAG (Retrieval-Augmented Generation) loop, receiving the most relevant transcript segments and generating:
+- **WHISPER** converts audio files into readable, timestamped text.
+- **Sentence Transformer** embeds the resulting (long) transcripts for semantic indexing in a vector database.
+- **Flan-T5-Large** is used in the RAG (Retrieval-Augmented Generation) loop, receiving the most relevant transcript segments and generating:
   - Natural language responses to queries.
   - Summarized meeting minutes.
 
@@ -206,20 +195,20 @@ The system is composed of multiple machine learning models that work together—
 ### Model training and training platforms
 ## Strategy
 
-Our training strategy employs distributed training techniques for the Longformer-base-4096 embeddings model and fine-tuning of Llama 7B using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.
+Our training strategy employs distributed training techniques for the Sentence Transformer embeddings model and fine-tuning of Flan-T5-Large using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.
 Relevant Parts of the Architecture
 
 MLFlow for experiment tracking and model versioning
 Ray clusters for distributed training
-Longformer-base-4096, pretrained on long documents
-Llama 7B with LORA optimizations
+Sentence Transformer, pretrained on long documents
+Flan-T5-Large with LORA optimizations
 Model Registry for version control and deployment
 
 Justification
 
 Distributed Training: The ICSI Meeting Recorder Corpus (39GB) contains substantial audio data requiring efficient parallelized processing. Ray's distributed training framework enables us to scale across multiple nodes on Chameleon infrastructure.
-Model Selection: Longformer-base-4096 (560MB) is specifically designed for long context (up to 4,096 tokens), making it ideal for meeting transcripts and lengthy documents while remaining small enough (560MB) for efficient deployment.
-Parameter-Efficient Fine-tuning: LORA reduces the number of trainable parameters for Llama 7B by approximately 95%, enabling fine-tuning on limited resources while maintaining performance.
+Model Selection: Sentence Transformer (560MB) is specifically designed for long context (up to 4,096 tokens), making it ideal for meeting transcripts and lengthy documents while remaining small enough (560MB) for efficient deployment.
+Parameter-Efficient Fine-tuning: LORA reduces the number of trainable parameters for Flan-T5-Large by approximately 95%, enabling fine-tuning on limited resources while maintaining performance.
 
 Relation to Lecture Material
 This approach implements the distributed training patterns discussed in the "Training at Scale" lectures, specifically:
@@ -246,22 +235,22 @@ We'll implement a multi-tier serving strategy with optimizations for both latenc
 Relevant Parts of the Architecture
 
 FastAPI service layer
-TorchServe for model deployment
 Quantized models for CPU inference
-GPU acceleration for batch processing
-MLFlow dashboards for monitoring
-Interactive data dashboard for visualization
+GPU acceleration for Faster inferencing
+Prometheus dashboards for metrics
+Interactive Grafana dashboard for visualization
+Airflow for testing suites
 
 Justification
 
-Inference Optimization: Quantization reduces the Longformer model size by 75% (from 560MB to ~140MB) while maintaining 97%+ of accuracy, enabling faster CPU inference for low-latency requirements.
+Inference Optimization: Quantization reduces the Sentence Transformer model size by 75% (from 560MB to ~140MB) while maintaining 97%+ of accuracy, enabling faster CPU inference for low-latency requirements.
 Multiple Serving Options: Different query patterns (interactive vs. batch processing) require different optimization strategies. Our architecture supports both GPU-accelerated batch processing and optimized CPU inference.
 Comprehensive Monitoring: Early detection of model drift is crucial for maintaining accuracy in enterprise environments where data patterns evolve.
 
 Relation to Lecture Material
 This implements the serving concepts from "Model Serving" lectures:
 
-Model optimization techniques (quantization, operator fusion)
+Model optimization techniques (ONNX)
 Batch vs. real-time inference patterns
 Zero-downtime deployment strategies
 A/B testing for model deployments
@@ -277,39 +266,129 @@ Canary Deployment: 10% traffic to new model versions for validation
 
 
 #### Data pipeline
-Strategy
-Our data pipeline focuses on efficient processing of multimedia inputs, with separate paths for documents, audio, and video. We'll implement both batch processing for historical data and streaming capabilities for real-time meeting analysis. A comprehensive data dashboard will provide insights into data quality and processing efficiency.
-Relevant Parts of the Architecture
+#### 1. Persistent Storage
 
-Document, audio, and video processing pipelines
-VOSK for speech-to-text conversion
-Chunking module for text segmentation
-Metadata extraction and storage
-Chameleon persistent storage
-Interactive data dashboard
+1. *Block-storage volume (KVM)*  
+   - A dedicated Chameleon block volume is attached at /mnt/block on your VM.  
+   - All containers in docker-compose.yml mount it as /data:
+     yaml
+     volumes:
+       - /mnt/block:/data
+     
+   - *Raw* and *processed* files persist across container restarts.
 
-Justification
+2. *Object-storage container (CHI-TACC Swift)*  
+   - A Swift container named object-persist-project39 holds final artifacts.  
+   - Rclone is configured in ~/.config/rclone/rclone.conf under the [chi_tacc] profile.  
+   - load-data.sh pushes /data/processed/*.jsonl into swift:object-persist-project39/processed.
+#### 2. Offline Data Pipeline
 
-Specialized Processing Paths: Different media types require specialized processing techniques. Our pipeline handles each appropriately while converging to a common text representation.
-Persistent Storage Strategy: Enterprise data requires secure, persistent storage with proper versioning and access controls.
-Streaming Processing: Real-time meeting analysis requires low-latency processing of audio streams, necessitating an optimized streaming pipeline.
+All offline (training) data lives under the same block volume and is moved to object storage when ready.  
 
-Relation to Lecture Material
-This implements the data engineering concepts from lectures:
+1. **Extract (extract-data.sh)**  
+   - Downloads 56 GB of AMI signals via your wget.txt manifest.  
+   - Grabs both manual & automatic NXT annotations:  
+     - ami_public_manual_1.6.2.zip → raw/ami/manual_annotations/…  
+     - ami_public_auto_1.5.1.zip   → raw/ami/automatic_annotations/…  
+   - Unpacks any existing amicorpus.tgz if present.
 
-ETL pipeline design
-Data quality monitoring
-Offline vs. online data processing
-Feature store concepts (for embeddings and metadata)
+2. **Transform (transform-data.sh)**  
+   - Walks *all* raw subfolders (raw/ami, raw/meetingbank), supports:  
+     - .trs, .txt, .json, NXT XML, PDF, DOCX, PNG/JPG (OCR), etc.  
+   - Emits clean JSON-lines per category:
+     - manual.jsonl  
+     - automatic.jsonl  
+     - transcripts.jsonl  
+   - Collates metadata (meetingID, file path, etc.) for each record.
+
+3. **Load (load-data.sh)**  
+   - Verifies local /data/processed contents & sizes.  
+   - Uses rclone copy --checksum --progress to push to:  
+     
+     swift:object-persist-project39/processed
+     
+   - Lists remote contents before & after to confirm success.
+
+#### 3. **Data pipelines**
+
+1. **Data Source**
+   - **ICSI Meeting Signals**  
+  - Audio `.wav` files for meeting IDs  
+    - Downloaded via `etl/extract/icsi.sh` from  
+      `https://groups.inf.ed.ac.uk/ami/ICSIsignals/NXT/<MID>.interaction.wav`  
+  - Manifest & license text from  
+    `https://groups.inf.ed.ac.uk/ami/download/temp/icsiBuild-15735-Sun-May-11-2025.manifest.txt`  
+    and `CCBY4.0.txt`
+
+- **Custom Video Inputs** (replacing OpenSLR)  
+  - Two MP4 files hosted on Google Drive  
+    - IDs `1bbmmYdlnkYwrkoULIa-IEhb6g80i4HwW` and `1Sc2OemI3c7blKMFAQnGnbSTgAE7IZz-6`  
+  - Downloaded via `gdown` in `extract-video` service
+ 
+2. **Offline ETL Pipeline**
+   -All steps run **in Docker**; code lives under `etl/`.
+
+
+cd etl
+docker compose run --rm extract-icsi      # 👉 Raw ICSI .wav + metadata onto /mnt/block/raw/icsi
+docker compose run --rm extract-video     # 👉 Raw videos onto /mnt/block/raw/video
+docker compose run --rm convert-video     # 👉 ffmpeg: MP4 → 16 kHz mono WAV
+docker compose build whisper-builder      # 👉 Build Whisper image (caches weights)
+docker compose run --rm transcribe-icsi   # 👉 Whisper transcribes ICSI → transcripts_icsi.jsonl
+docker compose run --rm transcribe-video  # 👉 Whisper transcribes video audio → transcripts_video.jsonl
+docker compose run --rm build-chunks      # 👉 chunk_text → train/val/prod JSONL in /mnt/block/processed
+docker compose run --rm embed-index       # 👉 Sentence-Transformer embed + FAISS index → /mnt/block/faiss_base
+docker compose run --rm push-object       # 👉 rclone pushes faiss_base → Swift `object-persist-project39/faiss_base`
+
+---
+3. **Data Pipeline and Online data** 
+Simulates production inference traffic:
+
+cd streaming
+docker compose up -d simulator
+simulate_requests.py reads prod_seed_chunks.jsonl
+
+Sends each chunk as a POST to your RAG API (RAG_ENDPOINT_URL) at configurable rate
+Logs {"timestamp", "latency", "status"} to /mnt/block/metrics/stream_metrics.jsonl
+
+Characteristics of simulated data
+
+Rate: 0.2 requests/sec (adjustable via --rate)
+
+Distribution: exact meeting-IDs held out for “prod_seed” in splits.yaml
+
+Realism: uses actual chunks derived from raw transcripts
+
+4. **Interactive Dashboard**
+Implemented in Streamlit, two tabs:
+
+
+cd rag_app
+streamlit run app.py  # reads RAG_ENDPOINT_URL from .env
+Chat: query RAG inference API, view Q/A history
+
+Dashboard: reads /mnt/block/metrics/*.jsonl, displays:
+
+Latency-over-time line chart
+
+### Usage
+
+1. Provision storage (if you include provision/ scripts).  
+2. Clone & cd into this directory.
+3. Ensure your Swift credentials are in ~/.config/rclone/rclone.conf.  
+4. Run:
+   
+   docker compose up --rm extract-data
+   docker compose up --rm transform-data
+   docker compose up --rm load-data
 
 Specific Numbers
 
-Storage Allocation: 500GB persistent storage on Chameleon
-Processing Throughput: 10MB/s for document processing, 1 hour of audio in <5 minutes
+Storage Allocation: 150GB persistent storage on Chameleon
+Used Storage: ~ 63 GB
 Chunking Configuration: Semantic chunks of 300-500 tokens with 50-token overlap
-Data Retention: 90-day default retention with configurable policies
-Dashboard Refresh: Real-time metrics with 15-second refresh interval
-Error Budget: <0.5% processing failures with automatic retry capabilities
+Data Retention: Till 15th MAy 2025
+Dashboard Refresh: Real-time metrics with 60-second refresh interval
 
 #### Continuous X
 Strategy

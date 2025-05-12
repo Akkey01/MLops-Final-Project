@@ -1,22 +1,25 @@
 import os
-from fastapi import FastAPI, HTTPException,Request, Response
+import time
+from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from pathlib import Path
-import time
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
+# Model version for canary/stable labeling
+MODEL_VERSION = os.getenv("MODEL_VERSION", "stable")
+
+# Prometheus metrics with version labeling
 REQUEST_COUNTER = Counter(
     "http_requests_total", "Total HTTP requests",
-    ["method", "endpoint", "http_status"]
+    ["method", "endpoint", "http_status", "version"]
 )
 
 REQUEST_LATENCY = Histogram(
     "http_request_duration_seconds", "Request latency in seconds",
-    ["method", "endpoint"]
+    ["method", "endpoint", "version"]
 )
-
 
 app = FastAPI(
     title="MLOPS Final Project (ONNX)",
@@ -28,14 +31,14 @@ app = FastAPI(
 async def prometheus_middleware(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
-    process_time = time.time() - start_time
+    duration = time.time() - start_time
 
-    endpoint = request.url.path
     method = request.method
-    status_code = str(response.status_code)
+    endpoint = request.url.path
+    status = str(response.status_code)
 
-    REQUEST_COUNTER.labels(method=method, endpoint=endpoint, http_status=status_code).inc()
-    REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(process_time)
+    REQUEST_COUNTER.labels(method, endpoint, status, MODEL_VERSION).inc()
+    REQUEST_LATENCY.labels(method, endpoint, MODEL_VERSION).observe(duration)
 
     return response
 
@@ -43,7 +46,7 @@ instrumentator = Instrumentator()
 instrumentator.instrument(app).expose(app, endpoint="/metrics")
 
 ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac"}
-MAX_FILE_SIZE_MB = 50  # Adjusted to match the logic
+MAX_FILE_SIZE_MB = 50
 MODEL_PATH = Path("./backend/tinyllama11b_chat_ft1")
 
 try:
@@ -53,17 +56,14 @@ try:
 except Exception as e:
     raise RuntimeError(f"Model loading failed: {e}")
 
-# Request body schema
 class Prompt(BaseModel):
     text: str
     max_new_tokens: int = 50
 
-# Health check
 @app.get("/")
 def read_root():
     return {"status": "API is up and running!"}
 
-# Inference route
 @app.post("/generate")
 def generate_text(prompt: Prompt):
     try:

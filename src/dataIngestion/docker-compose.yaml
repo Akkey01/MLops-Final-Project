@@ -78,94 +78,94 @@ services:
   redis:
     image: redis:latest
 
-  airflow-webserver:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
-      AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./runner:/opt/airflow/runner
-      - ./eval:/opt/airflow/eval
-      - ./test_data:/opt/airflow/test_data
-      - ../backend:/app/backend     
-    ports:
-      - "8080:8080"
-    command: webserver
+  # airflow-webserver:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.airflow
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  #     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  #     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CORE__FERNET_KEY: ''
+  #     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+  #     AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
+  #     AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
+  #   volumes:
+  #     - ./dags:/opt/airflow/dags
+  #     - ./runner:/opt/airflow/runner
+  #     - ./eval:/opt/airflow/eval
+  #     - ./test_data:/opt/airflow/test_data
+  #     - ../backend:/app/backend     
+  #   ports:
+  #     - "8080:8080"
+  #   command: webserver
 
-  airflow-scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
-      AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./runner:/opt/airflow/runner
-      - ./eval:/opt/airflow/eval
-      - ./test_data:/opt/airflow/test_data
-      - ../backend:/app/backend     
-    command: scheduler
+  # airflow-scheduler:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.airflow
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  #     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  #     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CORE__FERNET_KEY: ''
+  #     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+  #     AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
+  #     AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
+  #   volumes:
+  #     - ./dags:/opt/airflow/dags
+  #     - ./runner:/opt/airflow/runner
+  #     - ./eval:/opt/airflow/eval
+  #     - ./test_data:/opt/airflow/test_data
+  #     - ../backend:/app/backend     
+  #   command: scheduler
 
-  airflow-init:
-    image: apache/airflow:2.7.3
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./runner:/opt/airflow/runner
-      - ./eval:/opt/airflow/eval
-      - ./test_data:/opt/airflow/test_data
-      - ../backend:/app/backend     
-    command: db init
-  airflow-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    depends_on:
-      - redis
-      - postgres
-    environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./runner:/opt/airflow/runner
-      - ./eval:/opt/airflow/eval
-      - ./test_data:/opt/airflow/test_data
-    command: celery worker
+  # airflow-init:
+  #   image: apache/airflow:2.7.3
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  #     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  #     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CORE__FERNET_KEY: ''
+  #     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+  #     AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
+  #   volumes:
+  #     - ./dags:/opt/airflow/dags
+  #     - ./runner:/opt/airflow/runner
+  #     - ./eval:/opt/airflow/eval
+  #     - ./test_data:/opt/airflow/test_data
+  #     - ../backend:/app/backend     
+  #   command: db init
+  # airflow-worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.airflow
+  #   depends_on:
+  #     - redis
+  #     - postgres
+  #   environment:
+  #     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  #     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  #     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  #     AIRFLOW__CORE__FERNET_KEY: ''
+  #     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+  #     AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
+  #   volumes:
+  #     - ./dags:/opt/airflow/dags
+  #     - ./runner:/opt/airflow/runner
+  #     - ./eval:/opt/airflow/eval
+  #     - ./test_data:/opt/airflow/test_data
+  #   command: celery worker

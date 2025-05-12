@@ -39,6 +39,8 @@ services:
       - "8002:8000"
     environment:
       - MODEL_VERSION=stable
+    networks:
+      - monitoring
 
   backend-canary:
     build:
@@ -48,6 +50,8 @@ services:
       - "8001:8000"
     environment:
       - MODEL_VERSION=canary
+    networks:
+      - monitoring
 
   prometheus:
     image: prom/prometheus:latest

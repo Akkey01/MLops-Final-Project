@@ -57,7 +57,7 @@ services:
 
   ## ─── 4. TRANSCRIBE ICSI AUDIO ────────────────────────────────────
   transcribe-icsi:
-    buils:
+    build:
       context: ./transform
       dockerfile: Dockerfile.whisper
     user: root
@@ -127,15 +127,18 @@ services:
     image: rclone/rclone:latest
     volumes:
       - /mnt-block:/data
-      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
-    depends_on:
-      - embed-index
     environment:
-      - RCLONE_REMOTE=chi_tacc
-      - RCLONE_CONTAINER=object-persist-project39   # <— your bucket name
+      RCLONE_REMOTE: chi_tacc
+      RCLONE_CONTAINER: object-persist-project39
+      RCLONE_CONFIG_CHI_TACC_TYPE: swift
+      RCLONE_CONFIG_CHI_TACC_USER_ID: am15111@nyu.edu
+      RCLONE_CONFIG_CHI_TACC_APPLICATION_CREDENTIAL_ID: 1e6a5c3039254b99a536ab3737779252
+      RCLONE_CONFIG_CHI_TACC_APPLICATION_CREDENTIAL_SECRET: au2ccPLw7eMYNu2_wVT1hEd3UOoF9N51MfYLDk0gARphMyJkk7BhBoy0X1gsScT0Ge6cU8deY5X_QilOh-_2ng
+      RCLONE_CONFIG_CHI_TACC_AUTH: https://chi.tacc.chameleoncloud.org:5000/v3
+      RCLONE_CONFIG_CHI_TACC_REGION: CHI@TACC
     entrypoint: /bin/sh
     command: >
       -c "rclone copy /data/faiss_base $RCLONE_REMOTE:$RCLONE_CONTAINER/faiss_base --progress"
 
-  volumes:
-    whisper-cache:
+volumes:
+  whisper-cache:

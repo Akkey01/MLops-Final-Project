@@ -92,7 +92,7 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
       AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
     volumes:
       - ./dags:/opt/airflow/dags
@@ -118,7 +118,7 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__FERNET_KEY: ''
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__BASE_URL: http://0.0.0.0:8080
       AIRFLOW__WEBSERVER__SECRET_KEY: your-consistent-secret-key
     volumes:
       - ./dags:/opt/airflow/dags

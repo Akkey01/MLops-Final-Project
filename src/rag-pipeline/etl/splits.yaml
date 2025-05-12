@@ -1,0 +1,16 @@
+# List your ICSI meeting IDs under each split.
+train:
+  meetings:
+    - Bdb001
+    - Bdb002
+    - Bdb003
+    - Bdb004
+
+val:
+  meetings:
+    - Bdb008
+    - Bdb009
+
+prod_seed:
+  meetings:
+    - Bdb010

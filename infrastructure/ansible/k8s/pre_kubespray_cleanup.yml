@@ -1,0 +1,14 @@
+---
+- name: Remove old Docker APT list and keyring
+  hosts: all
+  become: yes
+  tasks:
+    - name: Delete any old docker.list
+      file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+
+    - name: Delete any old Docker keyring
+      file:
+        path: /usr/share/keyrings/docker-archive-keyring.gpg
+        state: absent

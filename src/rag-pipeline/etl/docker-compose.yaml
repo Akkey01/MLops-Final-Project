@@ -1,0 +1,136 @@
+services:
+
+  ## ─── 1. EXTRACT ICSI SIGNALS + ANNOTATIONS ───────────────────────
+  extract-icsi:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt/block:/data
+    working_dir: /data/raw
+    command: >
+      bash -c "
+        set -e
+
+        # 1. Download ICSI audio (signals)
+        mkdir -p icsi/audio
+        bash /app/etl/extract/icsiBuild-143922-Sun-May-11-2025.wget.sh \
+          --dest icsi/audio
+
+        # 2. Download core+contrib annotations (NXT format)
+        mkdir -p icsi/annotations_plus
+        wget -O icsi/annotations_plus/ICSI_plus_NXT.zip \
+          https://groups.inf.ed.ac.uk/ami/ICSICorpusAnnotations/ICSI_plus_NXT.zip
+        unzip -q icsi/annotations_plus/ICSI_plus_NXT.zip \
+          -d icsi/annotations_plus
+      "
+
+  ## ─── 2. EXTRACT & UNPACK SLIDESPeeCH VIDEO ────────────────────────
+  extract-video:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /data/raw/video
+    command: >
+      bash -c "
+        set -e
+        mkdir -p train_video
+        wget -O train_video.tar.gz \
+          https://speech-lab-share-data.oss-cn-shanghai.aliyuncs.com/SlideSpeech/train_video.tar.gz
+        tar -xzf train_video.tar.gz -C train_video --strip-components=1
+        rm train_video.tar.gz
+      "
+
+  ## ─── 3. CONVERT VIDEO → AUDIO ────────────────────────────────────
+  convert-video:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /app/etl/extract
+    depends_on:
+      - extract-video
+    command: >
+      python convert_video_audio.py \
+        --src /data/raw/video/train_video \
+        --dst /data/raw/video/audio
+
+  ## ─── 4. TRANSCRIBE ICSI AUDIO ────────────────────────────────────
+  transcribe-icsi:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /app/etl/transform
+    env_file:
+      - ./.env
+    depends_on:
+      - extract-icsi
+    command: >
+      python transcribe.py \
+        --audio_dir /data/raw/icsi/audio \
+        --out /data/processed/transcripts_icsi.jsonl
+
+  ## ─── 5. TRANSCRIBE VIDEO AUDIO ──────────────────────────────────
+  transcribe-video:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /app/etl/transform
+    env_file:
+      - ./.env
+    depends_on:
+      - convert-video
+    command: >
+      python transcribe.py \
+        --audio_dir /data/raw/video/audio \
+        --out /data/processed/transcripts_video.jsonl
+
+  ## ─── 6. BUILD + SPLIT CHUNKS ────────────────────────────────────
+  build-chunks:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /app/etl/transform
+    depends_on:
+      - transcribe-icsi
+      - transcribe-video
+    command: >
+      python build_chunks.py \
+        --transcripts /data/processed/transcripts_icsi.jsonl,/data/processed/transcripts_video.jsonl \
+        --icsi_txt /data/raw/icsi \
+        --video_dir /data/raw/video \
+        --annotations_plus /data/raw/icsi/annotations_plus \
+        --out /data/processed/chunks.jsonl \
+        --splits_cfg splits.yaml
+
+  ## ─── 7. EMBED & INDEX ──────────────────────────────────────────
+  embed-index:
+    image: python:3.11
+    user: root
+    volumes:
+      - /mnt-block:/data
+    working_dir: /app/etl/transform
+    depends_on:
+      - build-chunks
+    command: >
+      python embed_and_index.py \
+        --chunks /data/processed/chunks.jsonl \
+        --index_dir /data/faiss_base
+
+  ## ─── 8. BACKUP INDEX → OBJECT STORE ─────────────────────────────
+  push-object:
+    image: rclone/rclone:latest
+    volumes:
+      - /mnt-block:/data
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+    depends_on:
+      - embed-index
+    environment:
+      - RCLONE_REMOTE=chi_tacc
+      - RCLONE_CONTAINER=object-persist-project39   # <— your bucket name
+    entrypoint: /bin/sh
+    command: >
+      -c "rclone copy /data/faiss_base $RCLONE_REMOTE:$RCLONE_CONTAINER/faiss_base --progress"

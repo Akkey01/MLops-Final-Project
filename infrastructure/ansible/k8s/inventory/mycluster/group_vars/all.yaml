@@ -282,3 +282,5 @@ node_feature_discovery_enabled: false
 # node_feature_discovery_worker_sa_create: false
 # node_feature_discovery_master_config:
 #   extraLabelNs: ["nvidia.com"]
+
+ansible_apt_allow_downgrades: true

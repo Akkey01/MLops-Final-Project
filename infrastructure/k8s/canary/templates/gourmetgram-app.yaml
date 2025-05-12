@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: IMPS-app
-  namespace: IMPS-canary
+  name: imps-app
+  namespace: imps-canary
 
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: IMPS-app
+      app: imps-app
   template:
     metadata:
       labels:
-        app: IMPS-app
+        app: imps-app
     spec:
       containers:
-        - name: IMPS-app
+        - name: imps-app
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           ports:
             - containerPort: 8000
@@ -27,11 +27,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: IMPS-app
-  namespace: IMPS-canary
+  name: imps-app
+  namespace: imps-canary
 spec:
   selector:
-    app: IMPS-app
+    app: imps-app
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 8000

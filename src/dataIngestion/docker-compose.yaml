@@ -6,6 +6,10 @@ volumes:
   text_files: {}
   postgres_db: {}
 
+networks:
+  monitoring:
+    driver: bridge
+
 services:
   # whisper-setup:
   #   build:
@@ -52,6 +56,8 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
 
   grafana:
     image: grafana/grafana:latest
@@ -65,6 +71,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    networks:
+      - monitoring
 
   postgres:
     image: postgres:13

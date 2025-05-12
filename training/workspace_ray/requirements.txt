@@ -1,0 +1,7 @@
+torch
+torchvision
+lightning
+ray
+transformers
+json
+os

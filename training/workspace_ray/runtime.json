@@ -1,0 +1,6 @@
+{
+    "pip": "requirements.txt",
+    "env_vars": {
+        "ami-llm_DATA_DIR": "/mnt/Food-11"
+    }
+}

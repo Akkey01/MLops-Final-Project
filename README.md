@@ -196,9 +196,9 @@ The system is composed of multiple machine learning models that work together—
 
 
 ### Model training and training platforms
-The model was trained using LoRA. The model flan-t5-large was selected due to it's suitability for summarization. We experimented with different values of batch size and observed that a small batch size of 2 performs the best. We also observed that the best performance is with a learning rate of 1e-4 and 5 epochs.
+We initially selected Mistral 7B for fine-tuning but observed that it tends to produce low-quality outputs after fine-tuning on this dataset. The model flan-t5-large was selected due to it's suitability for summarization.  We experimented with different values of learning rates and found that the best performance is with lr=1e-4. We also observed that the best performance is obtained with a batch size of 2 and 5 epochs. We experimented with LoRA (low-rank adaptation), and found that it led to better quality of outputs on this dataset. Hence, the final model configuration adopted was flan-t5-large with LoRA, rank=8, alpha=16, with the target modules being the query and key layers, and batch size 2 with 5 epochs.
 
-We utilized MLFlow and Ray for logging experiments and understanding the impact of different hyperparameters, and feeding training jobs,
+We are in progress of implementing MLFlow and Ray for logging experiments and feeding training jobs.
 ## Strategy
 
 Our training strategy employs distributed training techniques for the Sentence Transformer embeddings model and fine-tuning of Flan-T5-Large using LORA (Low-Rank Adaptation) to optimize performance while minimizing computational requirements. We'll implement a continuous training pipeline that automatically triggers retraining based on drift detection.

@@ -1,16 +1,31 @@
-# docker-compose.online.yml
-version: "3.9"
+version: '3'
 
 services:
-
   simulator:
-    image: python:3.11
+    build:
+      context: ./streaming
+      dockerfile: Dockerfile
+    # Changed from host network mode to bridge for better isolation
+    # network_mode: host
     env_file: .env
+    restart: unless-stopped
     volumes:
-      - blockdata:/mnt/block:ro
-      - ./streaming:/code:ro
+      - blockdata:/mnt/block
     working_dir: /code
-    command: ["python", "stream_simulator.py", "--rate", "100/day"]
+    # Modified command to include connectivity check on startup
+    command:
+      - --batch-size
+      - "5"
+      - --interval
+      - "30"
+      - --check-connectivity
+    # Add healthcheck to monitor the service
+    healthcheck:
+      test: ["CMD", "test", "-f", "/mnt/block/stream_logs.jsonl"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   rag-ui:
     build:
@@ -21,6 +36,8 @@ services:
       - blockdata:/mnt/block:ro
     ports:
       - "8501:8501"
+    depends_on:
+      - simulator
 
   dashboard:
     image: python:3.11-slim
@@ -29,10 +46,46 @@ services:
     volumes:
       - ./app/dashboard.py:/app/dashboard.py:ro
       - blockdata:/mnt/block:ro
-    command: >
-      sh -c "pip install streamlit pandas &&
-             streamlit run dashboard.py
-               --server.port=8601
-               --server.address=0.0.0.0"
+    command:
+      - sh
+      - -c
+      - |
+        pip install --no-cache-dir streamlit pandas &&
+        streamlit run dashboard.py \
+          --server.port=8601 \
+          --server.address=0.0.0.0
     ports:
       - "8601:8601"
+    depends_on:
+      - simulator
+
+  # New diagnostics service to help troubleshoot connectivity issues
+  diagnostics:
+    image: alpine:latest
+    command: >
+      /bin/sh -c "
+        apk add --no-cache curl iptables iputils bind-tools &&
+        echo '=== Starting diagnostics service ===' &&
+        while true; do
+          echo '=== Checking connectivity at '$(date)' ===' &&
+          echo '- DNS resolution:' &&
+          nslookup api.together.xyz || echo 'DNS resolution failed' &&
+          echo '- API endpoint ping:' &&
+          ping -c 2 api.together.xyz || echo 'Ping failed' &&
+          echo '- Friend model endpoint:' &&
+          curl -m 5 $$MODEL_ENDPOINT || echo 'Connection to model failed' &&
+          sleep 300
+        done
+      "
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - blockdata:/mnt/block
+
+volumes:
+  blockdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/block

@@ -1,23 +1,18 @@
-# Dockerfile
-
-# 1. Base image: Python slim
+# 1. Base image
 FROM python:3.12-slim
 
-# 2. Install system dependencies for building extensions & PDF parsing
+# 2. System deps
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      wget \
-      tar \
-      build-essential \
-      cmake \
-      python3-dev \
-      git \
-      poppler-utils \
-      libpoppler-cpp-dev && \
+      wget tar build-essential cmake python3-dev git \
+      poppler-utils libpoppler-cpp-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Set working directory
+# 3. Workdir
 WORKDIR /app
+
+# 4. NLTK_DATA path
+ENV NLTK_DATA=/usr/share/nltk_data
 
 # 5. Download & extract AMI data
 ENV DATA_URL=https://openslr.org/resources/16/ami_manual_1.6.1.tar.gz \
@@ -27,17 +22,19 @@ RUN mkdir -p ${DATA_DIR} && \
     tar -xzf /tmp/ami.tar.gz -C ${DATA_DIR} --strip-components=1 && \
     rm /tmp/ami.tar.gz
 
-# 6. Install Python dependencies
+# 6. Install Python deps & punkt
 COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt && \
-    python -m nltk.downloader punkt
+    mkdir -p /usr/share/nltk_data && \
+    python -m nltk.downloader -d /usr/share/nltk_data punkt
 
-# 7. Copy your app code and any other files
+# 7. Copy app code
 COPY . .
 
-# 8. Expose Streamlit port
+# 8. Expose ports for UI + metrics
 EXPOSE 8501
+EXPOSE 8000
 
-# 9. Entrypoint: run the Streamlit app
+# 9. Entrypoint
 ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

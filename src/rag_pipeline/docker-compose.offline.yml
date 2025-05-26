@@ -1,37 +1,52 @@
-version: "3.9"
+# docker-compose.offline.yml
 services:
-
-  blockdata:
-    image: alpine:latest          # dummy service to define the volume
-    volumes:
-      - blockdata:/data
 
   extract-icsi:
     image: python:3.11
-    volumes: [ "blockdata:/data" ]
+    network_mode: "host"
+    volumes:
+      - blockdata:/data
+      - ./etl:/etl:ro
     working_dir: /data/raw
-    command: [ "bash", "/etl/01_extract_icsi.sh" ]
+    command: ["bash", "/etl/01_extract_icsi.sh"]
 
   transcribe:
-    image: ghcr.io/ggerganov/whisper.cpp:latest
-    volumes: [ "blockdata:/data" ]
-    working_dir: /data/raw
-    entrypoint: [ "bash", "/etl/02_transcribe_whisper.sh" ]
+    image: python:3.11
+    network_mode: "host"
+    volumes:
+      - blockdata:/data
+      - ./etl:/etl:ro
+    working_dir: /etl
+    entrypoint: ["bash", "/etl/02_transcribe_whisper.sh"]
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+
 
   build-faiss:
     image: python:3.11
-    volumes: [ "blockdata:/data" ]
+    network_mode: "host"
+    volumes:
+      - blockdata:/data
+      - ./etl:/etl:ro
     working_dir: /data
-    command: [ "python", "/etl/03_build_faiss.py" ]
+    command: >
+      bash -xc "
+        pip install --no-cache-dir faiss-cpu sentence-transformers numpy &&
+        python /etl/03_build_faiss.py
+      "
 
   push-to-object:
     image: rclone/rclone:latest
     env_file: .env
+    network_mode: "host"
     volumes:
-      - blockdata:/data
-    command: >
-      sh -c 'rclone copy /mnt/block/faiss_base
-             $${RCLONE_REMOTE}:$${RCLONE_CONTAINER}/faiss_base --progress'
+      - blockdata:/mnt/block
+    entrypoint: ["rclone"]
+    command:
+      - copy
+      - /mnt/block/faiss_base
+      - "${RCLONE_REMOTE}:${RCLONE_CONTAINER}/faiss_base"
+      - --progress
 
 volumes:
   blockdata:

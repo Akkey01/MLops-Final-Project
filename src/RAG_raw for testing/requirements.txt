@@ -1,4 +1,5 @@
 streamlit
+streamlit-chat
 sentence-transformers
 faiss-cpu
 requests
@@ -8,4 +9,5 @@ beautifulsoup4
 html2text
 transformers
 nbformat
-nltk
+nltk==3.8.1
+prometheus_client

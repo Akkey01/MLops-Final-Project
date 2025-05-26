@@ -1,48 +1,98 @@
-# app.py
-
-import os
-import pickle
+import os, time, pickle, nbformat, faiss
 import streamlit as st
+from streamlit_chat import message
 import pdfplumber, html2text, xml.etree.ElementTree as ET
 from docx import Document
 from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
-import faiss, numpy as np, requests
+import numpy as np, requests
 from transformers import GPT2TokenizerFast
-import nbformat, nltk, time
-from nltk.tokenize import sent_tokenize
+import nltk
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
+from prometheus_client import start_http_server, Counter, Histogram, REGISTRY
 
-# ─── Configuration ─────────────────────────────────────────────────────────────
-TOG_KEY = "c17ba696b3c19a15d9f3dd2b933c4627bfd2eeea848d62755ecce77123059a96"
-DATA_ROOT = "ami_data"
+# ─── NLTK setup (punkt only) ────────────────────────────────────────────────
+os.environ["NLTK_DATA"] = "/usr/share/nltk_data"
+nltk.data.path.append("/usr/share/nltk_data")
+pparam = PunktParameters()
+punkt_tokenizer = PunktSentenceTokenizer(pparam)
+def sent_tokenize(text: str):
+    return punkt_tokenizer.tokenize(text.strip())
 
-# ─── Ensure NLTK punkt for chunking ─────────────────────────────────────────────
-nltk.download("punkt", quiet=True)
+# ─── Prometheus instrumentation ───────────────────────────────────────────────
+try:
+    REQUEST_COUNT = Counter('rag_requests_total', 'Total RAG queries')
+    LATENCY       = Histogram('rag_query_latency_seconds', 'RAG query latency')
+    start_http_server(8000)
+except ValueError:
+    REQUEST_COUNT = REGISTRY._names_to_collectors['rag_requests_total']
+    LATENCY       = REGISTRY._names_to_collectors['rag_query_latency_seconds']
 
-# ─── Streamlit page config & CSS ────────────────────────────────────────────────
-st.set_page_config(page_title="RAG Chat+", layout="wide")
-st.markdown("""
-  <style>
-    body { background: #f5f7fa; }
-    .block-container { padding: 1rem 2rem; padding-bottom: 6rem; } /* extra bottom padding */
-    .title { font-size: 2rem; color: #2c3e50; margin-bottom: 1rem; font-weight:600; }
-    .history { max-height: 70vh; overflow-y: auto; }
-    .user-query, .bot-response {
-      padding: 0.75rem; margin: 0.5rem 0; border-radius: 8px; color: #000;
-    }
-    .user-query { background: #e8f0fe; }
-    .bot-response { background: #fff8dc; }
-    .sources { font-size:0.8rem; color:#666; margin-top:0.25rem; }
-    .input-container {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #f5f7fa; padding: 1rem 2rem; box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-      z-index: 100;
-    }
-  </style>
-""", unsafe_allow_html=True)
-st.markdown("<div class='title'>💬 RAG Chat — Ask Anything from Your Docs</div>", unsafe_allow_html=True)
+def timed_ask_rag(**kwargs):
+    REQUEST_COUNT.inc()
+    with LATENCY.time():
+        return ask_rag(**kwargs)
 
-# ─── Utility: read any file type ────────────────────────────────────────────────
+# ─── RAG + LLM call ───────────────────────────────────────────────────────────
+TOG_KEY    = "c17ba696b3c19a15d9f3dd2b933c4627bfd2eeea848d62755ecce77123059a96"
+DATA_ROOT  = "ami_data"
+INDEX_PATH = "index.faiss"
+CHUNKS_PATH= "chunks.pkl"
+
+def ask_rag(
+    query: str,
+    model: SentenceTransformer,
+    base_idx: faiss.Index,
+    base_chunks: list,
+    k: int,
+    upload_idx: faiss.Index,
+    upload_chunks: list,
+    temperature: float
+):
+    vec = model.encode([query]).astype("float32")
+    ctx, srcs = [], []
+
+    # 1) uploaded docs
+    if upload_idx.ntotal>0:
+        D,I = upload_idx.search(vec, k)
+        for dist,i in zip(D[0], I[0]):
+            c = upload_chunks[i]
+            ctx.append(c["chunk"])
+            srcs.append((c["fn"], dist))
+
+    # 2) base docs
+    if len(ctx)<k:
+        D,I = base_idx.search(vec, k-len(ctx))
+        for dist,i in zip(D[0], I[0]):
+            c = base_chunks[i]
+            ctx.append(c["chunk"])
+            srcs.append((c["fn"], dist))
+
+    if not ctx:
+        return "❓ No relevant context found.", []
+
+    prompt = f"Context:\n\n{chr(10).join(ctx)}\n\nQuestion: {query}\nAnswer:"
+    r = requests.post(
+        "https://api.together.xyz/v1/completions",
+        headers={
+            "Authorization":f"Bearer {TOG_KEY}",
+            "Content-Type":"application/json"
+        },
+        json={
+            "model":"mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "prompt":prompt,
+            "max_tokens":512,
+            "temperature":temperature,
+            "top_p":0.9
+        }
+    )
+    r.raise_for_status()
+    data = r.json()
+    choices = data.get("choices") or data.get("output",{}).get("choices",[])
+    text = choices[0].get("text","⚠️ No response.") if choices else "⚠️ No choices."
+    return text.strip(), srcs
+
+# ─── File→text utilities ──────────────────────────────────────────────────────
 def extract_text_from_pdf(p):
     with pdfplumber.open(p) as pdf:
         return "\n".join(page.extract_text() or "" for page in pdf.pages)
@@ -52,8 +102,8 @@ def extract_text_from_html(p):
     soup = BeautifulSoup(open(p, encoding="utf-8"), "html.parser")
     return html2text.html2text(soup.prettify())
 def extract_text_from_txt(p):
-    for enc in ("utf-8","latin-1"):
-        try: return open(p, encoding=enc).read()
+    for e in ("utf-8","latin-1"):
+        try: return open(p, encoding=e).read()
         except: pass
     return ""
 def extract_text_from_xml(p):
@@ -61,175 +111,188 @@ def extract_text_from_xml(p):
     return " ".join(e.text.strip() for e in tree.getroot().iter() if e.text)
 def extract_text_from_ipynb(p):
     nb = nbformat.read(p, as_version=4)
-    return "\n".join(cell.source for cell in nb.cells if cell.cell_type in ("markdown","code"))
+    return "\n".join(c.source for c in nb.cells if c.cell_type in ("markdown","code"))
 
 def read_any_file(fp):
     ext = os.path.splitext(fp)[1].lower()
-    if ext==".pdf":   return extract_text_from_pdf(fp)
-    if ext==".docx":  return extract_text_from_docx(fp)
-    if ext in (".txt",".md",".css"): return extract_text_from_txt(fp)
-    if ext==".html":  return extract_text_from_html(fp)
-    if ext==".xml":   return extract_text_from_xml(fp)
-    if ext==".ipynb": return extract_text_from_ipynb(fp)
-    return ""
+    return {
+      ".pdf":   extract_text_from_pdf,
+      ".docx":  extract_text_from_docx,
+      ".html":  extract_text_from_html,
+      ".xml":   extract_text_from_xml,
+      ".ipynb": extract_text_from_ipynb
+    }.get(ext, extract_text_from_txt)(fp)
 
-# ─── Chunking with overlap ─────────────────────────────────────────────────────
-tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
-def chunk_text(text, max_tokens=500, overlap_sents=3):
+# ─── Chunking ────────────────────────────────────────────────────────────────
+tok = GPT2TokenizerFast.from_pretrained("gpt2")
+def chunk_text(text, max_tokens=500, overlap=3):
     if not text.strip(): return []
     sents = sent_tokenize(text)
     chunks, cur, ct = [], [], 0
     for s in sents:
-        tl = len(tokenizer.encode(s, add_special_tokens=False))
-        if ct + tl > max_tokens:
+        l = len(tok.encode(s, add_special_tokens=False))
+        if ct + l > max_tokens:
             chunks.append(" ".join(cur))
-            keep = cur[-overlap_sents:] if len(cur)>overlap_sents else cur
-            cur, ct = keep.copy(), sum(len(tokenizer.encode(x, add_special_tokens=False)) for x in keep)
-            cur.append(s); ct+=tl
-        else:
-            cur.append(s); ct+=tl
+            keep = cur[-overlap:] if len(cur)>overlap else cur
+            cur = keep.copy()
+            ct  = sum(len(tok.encode(x, add_special_tokens=False)) for x in keep)
+        cur.append(s); ct += l
     if cur: chunks.append(" ".join(cur))
     return chunks
 
-# ─── Persistent Base Index ─────────────────────────────────────────────────────
-INDEX_PATH, CHUNKS_PATH = "index.faiss", "chunks.pkl"
+# ─── Build/load FAISS index ───────────────────────────────────────────────────
 @st.cache_data
 def build_or_load_index(root=DATA_ROOT):
-    # load existing
     if os.path.exists(INDEX_PATH) and os.path.exists(CHUNKS_PATH):
-        idx = faiss.read_index(INDEX_PATH)
+        idx    = faiss.read_index(INDEX_PATH)
         chunks = pickle.load(open(CHUNKS_PATH,"rb"))
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        return idx, chunks, model, None
-    # build fresh
+        mdl    = SentenceTransformer('all-MiniLM-L6-v2')
+        return idx, chunks, mdl
+
     docs=[]
-    if os.path.isdir(root):
-        for dp,_,files in os.walk(root):
-            for f in files:
-                fp=os.path.join(dp,f)
-                txt=read_any_file(fp)
-                if txt.strip(): docs.append({"fn":f,"txt":txt})
-    if not docs: return None,None,None,"No base documents."
+    for dp,_,files in os.walk(root):
+        for f in files:
+            txt = read_any_file(os.path.join(dp,f))
+            if txt.strip():
+                docs.append({"fn":f,"txt":txt})
+
     all_chunks=[]
     for d in docs:
-        all_chunks += [{"fn":d["fn"],"chunk":c} for c in chunk_text(d["txt"])]
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    embs = model.encode([c["chunk"] for c in all_chunks]).astype("float32")
-    dim = embs.shape[1]
+        all_chunks += [{"fn":d["fn"], "chunk":c} for c in chunk_text(d["txt"])]
+
+    mdl   = SentenceTransformer('all-MiniLM-L6-v2')
+    embs  = mdl.encode([c["chunk"] for c in all_chunks]).astype("float32")
+    dim   = embs.shape[1]
+
     if len(all_chunks)>1000:
-        nlist=min(len(all_chunks)//10,100)
-        quant=faiss.IndexFlatL2(dim)
-        idx=faiss.IndexIVFFlat(quant,dim,nlist,faiss.METRIC_L2)
+        nlist = min(len(all_chunks)//10,100)
+        quant = faiss.IndexFlatL2(dim)
+        idx   = faiss.IndexIVFFlat(quant,dim,nlist,faiss.METRIC_L2)
         idx.train(embs); idx.add(embs)
     else:
-        idx=faiss.IndexFlatL2(dim); idx.add(embs)
+        idx = faiss.IndexFlatL2(dim); idx.add(embs)
+
     faiss.write_index(idx, INDEX_PATH)
     pickle.dump(all_chunks, open(CHUNKS_PATH,"wb"))
-    return idx, all_chunks, model, None
+    return idx, all_chunks, mdl
 
-with st.spinner("Building/loading base index…"):
-    base_idx, base_chunks, model, err = build_or_load_index()
-if err: st.error(err)
+# ─── Layout & CSS ─────────────────────────────────────────────────────────────
+st.set_page_config(page_title="IMPS.AI", layout="wide")
+st.markdown("""
+<style>
+:root {
+  --bg: #1e1e2f; --fg: #e0e0e0;
+  --user-bg: #2a2a3b; --bot-bg: #33334a;
+}
+body, .stApp { background:var(--bg); color:var(--fg); }
+.stApp .block-container { padding-bottom:5rem; position:relative; }
+.chat-container {
+  position:absolute; top:4rem; bottom:4rem; left:2rem; right:2rem;
+  overflow-y:auto; border:1px solid #444; border-radius:8px; padding:1rem;
+}
+.input-area {
+  position:fixed; bottom:0; left:2rem; right:2rem;
+  background:var(--bg); padding:1rem; border-top:1px solid #444;
+}
+.source { font-size:0.75rem; color:#888; margin-left:1.5rem; }
+</style>
+""", unsafe_allow_html=True)
 
-# ─── Setup Upload Index & History ─────────────────────────────────────────────
+# ─── Build index ───────────────────────────────────────────────────────────────
+with st.spinner("Loading documents…"):
+    base_idx, base_chunks, model = build_or_load_index()
+
+# ─── Session init ─────────────────────────────────────────────────────────────
 if "upload_idx" not in st.session_state:
-    dim = model.get_sentence_embedding_dimension()
-    st.session_state.upload_idx = faiss.IndexFlatL2(dim)
+    d = model.get_sentence_embedding_dimension()
+    st.session_state.upload_idx    = faiss.IndexFlatL2(d)
     st.session_state.upload_chunks = []
 if "history" not in st.session_state:
-    st.session_state.history = []
+    st.session_state.history   = []
+if "latencies" not in st.session_state:
+    st.session_state.latencies = []
 
-# ─── Sidebar: Upload & Settings ───────────────────────────────────────────────
-with st.sidebar:
-    st.header("⚙️ Settings")
-    k_value = st.slider("Context chunks (k)",1,10,5)
-    temperature = st.slider("Temperature",0.0,1.0,0.3,0.1)
-    show_sources = st.checkbox("Show sources",True)
-    st.markdown("---")
-    st.header("📤 Upload Documents")
-    ufs = st.file_uploader("pdf,docx,txt,md,html,xml,ipynb",accept_multiple_files=True)
-    if ufs:
-        total=0; prog=st.progress(0)
-        for i,f in enumerate(ufs):
-            dst=os.path.join("uploads",f.name)
-            os.makedirs("uploads",exist_ok=True)
-            with open(dst,"wb") as out: out.write(f.getbuffer())
-            txt=read_any_file(dst)
-            chunks=chunk_text(txt)
-            if chunks:
-                embs=model.encode(chunks).astype("float32")
-                st.session_state.upload_idx.add(embs)
-                st.session_state.upload_chunks += [{"fn":f.name,"chunk":c} for c in chunks]
-                total += len(chunks)
-            prog.progress((i+1)/len(ufs))
-        st.success(f"Indexed {total} chunks.")
-    if st.button("Clear Uploads"):
-        st.session_state.upload_idx = faiss.IndexFlatL2(dim)
-        st.session_state.upload_chunks = []
-        st.success("Cleared uploads.")
-    if st.button("New Chat"):
-        st.session_state.history = []
-        st.experimental_rerun()
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
+page = st.sidebar.radio("Page", ["Chat","Metrics"])
+st.sidebar.markdown("---")
+st.sidebar.header("⚙️ Settings")
+k_value     = st.sidebar.slider("Context chunks (k)",1,10,5)
+temperature = st.sidebar.slider("Temperature",0.0,1.0,0.3,0.1)
+st.sidebar.markdown("---")
+st.sidebar.header("📤 Upload Documents")
+ufs = st.sidebar.file_uploader("", accept_multiple_files=True)
+if ufs:
+    prog, total = st.sidebar.progress(0), 0
+    os.makedirs("uploads", exist_ok=True)
+    for i,f in enumerate(ufs):
+        dst = os.path.join("uploads", f.name)
+        with open(dst,"wb") as out: out.write(f.getbuffer())
+        ch = chunk_text(read_any_file(dst))
+        if ch:
+            embs = model.encode(ch).astype("float32")
+            st.session_state.upload_idx.add(embs)
+            st.session_state.upload_chunks += [{"fn":f.name,"chunk":c} for c in ch]
+            total += len(ch)
+        prog.progress((i+1)/len(ufs))
+    st.sidebar.success(f"Indexed {total} chunks.")
 
-# ─── RAG & Generation ─────────────────────────────────────────────────────────
-def generate_answer(prompt):
-    for _ in range(3):
-        try:
-            r=requests.post(
-              "https://api.together.xyz/v1/completions",
-              headers={"Authorization":f"Bearer {TOG_KEY}","Content-Type":"application/json"},
-              json={"model":"mistralai/Mixtral-8x7B-Instruct-v0.1",
-                    "prompt":prompt,"max_tokens":512,
-                    "temperature":temperature,"top_p":0.9}
-            )
-            r.raise_for_status()
-            data=r.json()
-            if "choices" in data: return data["choices"][0].get("text","")
-            if data.get("output","") and "choices" in data["output"]:
-                return data["output"]["choices"][0].get("text","")
-            return "⚠️ Bad response."
-        except:
-            time.sleep(1)
-    return "⚠️ API error."
+# ─── Chat page ─────────────────────────────────────────────────────────────────
+if page == "Chat":
+    st.title("💬 IMPS.AI — Ask Anything from Your Docs")
 
-def ask_rag(query):
-    ql=query.strip().lower()
-    if ql in ("hi","hello","hey"):
-        return "Hello! How can I help you today?", []
-    qv=model.encode([query]).astype("float32")
-    ctx,sources=[],[]
-    # uploads first
-    if st.session_state.upload_idx.ntotal>0:
-        D,I=st.session_state.upload_idx.search(qv,k_value)
-        for dist,i in zip(D[0],I[0]):
-            ch=st.session_state.upload_chunks[i]
-            ctx.append(ch["chunk"]); sources.append((ch["fn"],dist))
-    # then base
-    rem=k_value-len(ctx)
-    if rem>0:
-        D,I=base_idx.search(qv,rem)
-        for dist,i in zip(D[0],I[0]):
-            ch=base_chunks[i]
-            ctx.append(ch["chunk"]); sources.append((ch["fn"],dist))
-    if not ctx: return "❓ No relevant context found.", []
-    prompt = f"Context:\n{'\n\n'.join(ctx)}\n\nQuestion: {query}\nAnswer:"
-    return generate_answer(prompt), sources
+    # History (scrollable)
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    for idx, turn in enumerate(st.session_state.history):
+        # give each user bubble a unique key
+        message(
+            turn["q"],
+            is_user=True,
+            key=f"user_{idx}",
+            avatar_style="pixel-art",
+            seed="user"
+        )
+        # and each bot bubble one too
+        message(
+            turn["a"],
+            is_user=False,
+            key=f"bot_{idx}",
+            avatar_style="pixel-art",
+            seed="bot"
+        )
+        if turn.get("sources"):
+            src = ", ".join(f"{fn} ({d:.1f})" for fn,d in turn["sources"])
+            st.markdown(f"<div class='source'>Sources: {src}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ─── Chat History & Fixed Input ────────────────────────────────────────────────
-st.markdown("<div class='history'>", unsafe_allow_html=True)
-for turn in st.session_state.history:
-    st.markdown(f"<div class='user-query'><b>You:</b> {turn['q']}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='bot-response'><b>RAG:</b> {turn['a']}</div>", unsafe_allow_html=True)
-    if show_sources and turn.get("sources"):
-        srcs=", ".join(f"{fn} ({dist:.2f})" for fn,dist in turn["sources"])
-        st.markdown(f"<div class='sources'>Sources: {srcs}</div>", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+    # Input bar (fixed)
+    st.markdown("<div class='input-area'>", unsafe_allow_html=True)
+    with st.form("query_form", clear_on_submit=True):
+        query  = st.text_input("Your question…", "")
+        submit = st.form_submit_button("Send")
+    if submit and query:
+        start = time.time()
+        ans, srcs = timed_ask_rag(
+            query=query,
+            model=model,
+            base_idx=base_idx,
+            base_chunks=base_chunks,
+            k=k_value,
+            upload_idx=st.session_state.upload_idx,
+            upload_chunks=st.session_state.upload_chunks,
+            temperature=temperature
+        )
+        st.session_state.latencies.append(time.time() - start)
+        st.session_state.history.append({"q":query,"a":ans,"sources":srcs})
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# fixed input at bottom
-st.markdown("<div class='input-container'>", unsafe_allow_html=True)
-query = st.text_input("Ask a question", key="user_input", placeholder="Type here and press Enter")
-if query:
-    ans, srcs = ask_rag(query)
-    st.session_state.history.append({"q":query,"a":ans,"sources":srcs})
-    st.session_state.user_input = ""  # clear input
-st.markdown("</div>", unsafe_allow_html=True)
+
+# ─── Metrics page ─────────────────────────────────────────────────────────────
+else:
+    st.title("📊 IMPS.AI Metrics")
+    st.metric("Total Queries", len(st.session_state.latencies),
+              delta=f"{st.session_state.latencies[-1]:.2f}s last" 
+                    if st.session_state.latencies else "")
+    st.subheader("Latency Over Time (s)")
+    st.line_chart(st.session_state.latencies or [0])
+    st.subheader("Prometheus Endpoint")
+    st.write("[http://localhost:8000/metrics](http://localhost:8000/metrics)")
